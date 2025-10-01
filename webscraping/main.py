@@ -41,7 +41,7 @@ roseListingsParent = wait.until(
 # Begin writing data to roses.csv
 wait = WebDriverWait(driver, 100000)
 
-with open("roses.csv", "w", newline='') as csvfile:
+with open("../roses.csv", "w", newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(['Category', 'Supplier', 'Price', 'Product Name', 'Quantity', 'Delivery Date', 'Boxes Available'])
 
@@ -74,7 +74,7 @@ while not done:
 
             print(category, supplier, price, product_name, quantity, delivery_date, boxes_available)
 
-            with open("roses.csv", "a", newline='') as csvfile:
+            with open("../roses.csv", "a", newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow([category, supplier, price, product_name, quantity, delivery_date, boxes_available])
                 csvfile.flush()
