@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel = "stylesheet" href ="../styles/form.css">
+</head>
+<body>
+
+<h2>HTML Form Example</h2>
+
+<div>
+  <!-- By default sends a GET request with the form arguments -->
+  <form>
+    <!-- <form action="/form_submit"> -->
+    <label for="fname">First Name</label>
+    <input type="text" id="fname" name="firstname" placeholder="Your name..">
+
+    <label for="lname">Last Name</label>
+    <input type="text" id="lname" name="lastname" placeholder="Your last name..">
+	
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" required> <br>
+
+	<label for="fan">Rock Music Fan ?</label><br>
+	
+	<input type="radio" id="yes" name="fan" value="yes">
+	<label for="yes">Yes</label><br>
+	
+	<input type="radio" id="no" name="fan" value="no">
+	<label for="no">No</label><br>
+
+    <label for="Gender">Gender</label>
+    <select id="gender" name="gender">
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+      <option value="other">Other</option>
+    </select>
+  
+    <input type="submit" value="Submit">
+  </form>
+</div>
+
+</body>
+</html>

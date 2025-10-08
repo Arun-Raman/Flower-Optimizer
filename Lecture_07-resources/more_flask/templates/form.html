@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script>
+    // JQuery example
+    // $(document).ready(function () {
+    //   // Possible selectors
+    //   // $("form").submit(function () { // When submitting any form 
+    //   // $("form#form1").submit(function () { // When submitting form with id="form1"
+    //   $("#form1").submit(function () { // When submitting any element with id="form1"
+    //     alert('Submitting Form');
+    //     onsubmit_do_something();
+    //     alert("Form submitted Successfully");
+    //   });
+    // });
+
+    function onsubmit_do_something() {
+      // Send the browser date to the date element to submit with the form
+      const current_date = new Date()
+      document.getElementById('date').value = current_date.getTime();
+    }
+  </script>
+</head>
+
+<body>
+
+  <h1>Form Submission Example</h1>
+
+  <!-- Uncomment the form action to see the difference between using jquery and not using jquery -->
+  <!-- <form action="/form_submit" method="POST" id="form1">  -->
+  <form action="/form_submit" method="POST" id="form1" onsubmit="alert('Submitting Form'); onsubmit_do_something();">
+    <label for="fname">First name:</label>
+    <input type="text" id="fname" name="fname" required><br><br>
+
+    <label for="lname">Last name:</label>
+    <input type="text" id="lname" name="lname"><br><br>
+
+    <input type="hidden" id="date" name="date"><br><br>
+    <input type="submit" value="Submit">
+  </form>
+
+  <p>Click on the submit button to submit".</p>
+
+  <form action="/calculate" method="post" id="calculateform" onsubmit="alert('Trying calculator')">
+    <button name="foo" value="calculate">Click Me to Open the Calculator!</button>
+  </form>
+
+</body>
+
+</html>

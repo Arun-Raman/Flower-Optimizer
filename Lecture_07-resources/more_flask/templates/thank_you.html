@@ -1,0 +1,28 @@
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+  <script>
+    function welcomeback(matches) {
+      console.log("Matches existing user:" + matches);
+      if (matches) {
+        alert("Welcome back !");
+      }
+    }
+    // Run the function when the page opens
+    welcomeback({{ matches }});
+  </script>
+</head>
+
+<body>
+  <div class="jumbotron text-center">
+    <h1 class="display-3">Thank You, {{hashed_id}} !</h1>
+    <h2 class="display-2">University: {{uni}} <br>Email: {{email}}</h2>
+    <hr>
+    </p>
+  </div>
+</body>
+
+</html>

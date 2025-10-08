@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script>
+    // JQuery (Javascript) code to do something on form submission. More on this in the next lecture.
+    $(document).ready(function () {
+      $("form").submit(function () {
+        alert("Submitted");
+      });
+    }); 
+  </script>
+</head>
+
+<body>
+
+  <h1>Form Submission Example</h1>
+
+  <!-- 
+  Can specify the action attribute to send the form data to a specific URL.
+  <form action="/form_submit" method="POST" id = "form"> -->
+  <form method="POST" id="form">
+    <label for="fname">First name:</label>
+    <input type="text" id="fname" name="firstname" required><br><br>
+    <label for="lname">Last name:</label>
+    <input type="text" id="lname" name="lastname"><br><br>
+    <input type="submit" value="Submit">
+  </form>
+
+  <p>Click on the submit button to submit".</p>
+
+  <!-- <form action="/calculate" method="post">
+    <button name="foo" value="calculate">Click Me to Open the Calculator!</button>
+  </form> -->
+
+  <!-- Another way to make a link -->
+  <a href="/calculate" hidden>
+    <button name="foo" value="calculate"> Click Me to Open the Calculator!</button>
+  </a>
+
+</body>
+
+</html>

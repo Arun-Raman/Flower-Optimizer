@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+  <h1>Form Submission Example</h1>
+
+  <!-- 
+  Can specify the action attribute to send the form data to a specific URL.
+  <form action="/form" method="POST" id = "form"> -->
+  <form method="POST" id="form">
+    <label for="grocery">Grocery: </label>
+    <input type="text" id="grocery" name="grocery" required><br><br>
+    <label for="count">Count:</label>
+    <input type="number" id="count" name="count" value="1"><br><br>
+    <label for="id">ID:</label>
+    <input type="number" id="id" name="id" required><br><br>
+    <input type="submit" value="Submit">
+  </form>
+
+  <p>Click on the submit button to submit".</p>
+
+  <!-- <form action="/calculate" method="post">
+    <button name="foo" value="calculate">Click Me to Open the Calculator!</button>
+  </form> -->
+
+  <!-- Another way to make a link -->
+  <a href="/calculate" hidden>
+    <button name="foo" value="calculate"> Click Me to Open the Calculator!</button>
+  </a>
+
+</body>
+
+</html>

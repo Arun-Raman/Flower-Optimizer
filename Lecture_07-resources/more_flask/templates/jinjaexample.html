@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- The static folder in flask is used to store static files accessed by the front end like css, js, images etc. -->
+  <link rel = "stylesheet" href ="../static/jinja.css">
+  <script src="../static/jinja.js"></script>
+</head>
+
+<body>
+
+  <h2>Grocery List</h2>
+  <table>
+    <!-- Here data is a dictionary from the flask backend-->
+    {% for key,value in data.items() %}
+    <tr>
+      <!-- Here loop index can be used to get the index of the current iteration (1-indexed) -->
+      <td id="table{{loop.index}}">{{key}}</td>
+      <td id="tableval{{loop.index}}">{{value}}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <!-- For loop over a list-->
+  <div class="products" id="products">
+    <h2>Products List</h2>
+    <!-- Can get the length of a list using the length filter -->
+    {% for i in range(data_list|length) %}
+    <p id="list{{i}}" onclick="change_color_of_item('{{i + 1}}')">{{data_list[i]}}
+      <!-- Can add things to this list dynamically -->
+    <div id="listval{{i}}" hidden></div>
+    </p>
+    {% endfor %}
+  </div>
+</body>
+
+</html>

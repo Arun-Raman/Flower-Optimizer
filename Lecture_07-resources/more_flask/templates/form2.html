@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="../static/form2.js"></script>
+
+</head>
+
+<body>
+
+  <h1>Second Form </h1>
+
+  <form action="/form2_submit" method="POST" id="form">
+    <label for="uni">University:</label>
+    <input type="text" id="uni" name="uni" required><br><br>
+    <label for="email">email:</label>
+    <input type="email" id="email" name="email"><br><br>
+    <!-- Here's an example showing a HIDDEN input type to pass a value to another form -->
+    <input type="hidden" id="hash_id" name="hash_id" value="{{hashed_id}}"><br><br>
+    <!-- Here's an example showing how to pass data from the backend into a Javascript function (in the front end) -->
+    <input type="button" id="fakesubmit" value="Submit" onclick="fakesubmitfn('{{extra_info['first_name']}}')">
+    <input type="submit" id="realsubmit" value="Submit" onclick="alertwithcontent( {{ extra_info }})" hidden>
+  </form>
+
+  <p>Click on the submit button to submit".</p>
+
+</body>
+
+</html>
