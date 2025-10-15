@@ -1,7 +1,8 @@
 import flask
+import flask_cors
 
 app = flask.Flask(__name__)
-
+flask_cors.CORS(app, origins=["http://localhost:5173"])
 
 @app.route("/", methods=['GET'])
 def index():  # URL: http://
@@ -20,6 +21,10 @@ def submit():
 @app.route("/results", methods=['GET', 'POST'])
 def results():
     return flask.render_template("")  # insert results template
+
+@app.route("/test", methods=['GET'])
+def test():
+    return "hello from the backend"
 
 if __name__ == '__main__':
     # Start the server
