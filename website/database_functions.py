@@ -65,6 +65,17 @@ def get_entry(table_name, idx):  # returns dictionary
         else:
             print("Error: entry doesn't exist")
             return None
+        
+
+def get_all_entries(table_name):  # returns list of dictionaries
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    
+    c = conn.cursor()
+    c.execute(f"SELECT * FROM {table_name}")
+    rows = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return rows
 
 
 def delete_entry(table_name, idx):  # returns true if deleted, false otherwise
@@ -104,6 +115,30 @@ if __name__ == "__main__":
     delete_entry("search", entry_id)
     entry = get_entry("search", entry_id)
     print(entry)
+
+    entry_id = add_entry(
+        table_name="search",
+        category="Roses",
+        product_name="Red Passion",
+        vendor="FlowerCo",
+        price_per_box=39.99,
+        number_per_box=25,
+        delivery_date=str(date.today()),
+        stems_available=500
+    )
+    entry_id = add_entry(
+        table_name="search",
+        category="Dafodils",
+        product_name="Orange Julius",
+        vendor="FlowerCo",
+        price_per_box=39.99,
+        number_per_box=25,
+        delivery_date=str(date.today()),
+        stems_available=500
+    )
+    print("get_all_entries")
+    print(get_all_entries("search"))
+    print("=============================")
 
     delete_table("search")
 
