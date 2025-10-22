@@ -1,5 +1,6 @@
-#Need to run pip install gurobipy, which is ok, but we need to figure out how this can be done automatically on Paula's computer
-from pulp import LpProblem, LpVariable, LpMinimize, lpSum
+#Need to run pip install gurobipy, which is ok, but we need to figure out how this can be done automatically on Paula's computer - Use subprocesses to call pip
+#https://sqlpey.com/python/solved-how-to-install-a-python-module-within-code/
+from pulp import LpProblem, LpVariable, LpMinimize, lpSum, LpStatus, value
 #I kept this really simple. We'll definitely have some flower bundles that might have some amount of different colors and flowers, so we'd need to sort out what that looks like
 #We just have to make sure that the datalist (shown below) returned by the web scraping team is what we need it to be. Or we might need to turn strings into integers, etc.
 datalist = [
@@ -72,20 +73,56 @@ x = {flower["Identifier"]: LpVariable(name=f"x_{flower['Identifier']}",lowBound=
 model += ((lpSum((x[flower["Identifier"]] * flower["Number of Flowers per Package"]) for flower in filteredlist)) <= amount_high), "Constraint 1" 
 model += ((lpSum((x[flower["Identifier"]] * flower["Number of Flowers per Package"]) for flower in filteredlist)) >= amount_low), "Constraint 2"
 #We want to minimize the total cost of our order! So, minimize the sum over all flowers of the flowers' cost times the number of each flower we buy
-model += (lpSum((x[flower["Identifier"]] * flower["Cost"]) for flower in filteredlist)), "Objective"
-model.solve() #update the model to take in all the changes
+objective_expression = (lpSum((x[flower["Identifier"]] * flower["Cost"]) for flower in filteredlist))
+model += objective_expression, "Objective"
 
-print("-----------------------------------------------------------------------------------------------------------------")
+
+num_solutions = 5
+solutions = []
+previous__solution = -float("inf")
+
+for i in range(1,num_solutions+1):
+    if i> 1:
+        model += objective_expression >= previous__solution + 0.001, f"New Objective {i}"
+    model.solve() #update the model to take in all the changes
+    if LpStatus[model.status] == "Optimal":
+        current_cost = value(model.objective)
+        current_solution = {'Cost': current_cost, 'Order': [], 'TotalFlowers': 0}
+        
+        for identifier, var in x.items():
+            if var.varValue is not None:
+                packages = int(var.varValue)  
+            else:
+                packages = 0
+            if packages > 0:
+                # Find the package size to calculate total flowers
+                flower_data = next(f for f in filteredlist if f["Identifier"] == identifier)
+                
+                current_solution['Order'].append(f"{packages} packages of {identifier}")
+                current_solution['TotalFlowers'] += packages * flower_data["Number of Flowers per Package"]
+        solutions.append(current_solution)
+        previous__solution = current_cost
+    else:
+        print("Maximum number of solutions generated.")
+        break
+
+print("-"*20)
 print("Your optimal order is: ")
 
-#1 means there was a procurement option that fits whatever constraints Paula wants, while -1 or -2 means, for all intents and purposes, that there isn't
-if (model.status == 1):
-    for i in x:
-        #For post-processing, pulp requires you to use the solution value, x[i].varValue, not just the variable at face value (like x[i])
-        #We only want to print the flower identifier and the value of its associated variable (number of packages of that flower to order) if we actually want to order some nonzero amount of packages of that flower
-        if (x[i].varValue != 0):
-            print(f"{x[i].varValue} of {i}")
-elif (model.status == -1 or model.status == -2):
-    print("Model is either infeasible or unbounded.")
+#1 means there was a procurement option that fits whatever constraints Paula wants, while -1 or -2 means that there isn't
+if solutions == []:
+    print(f"No solution found that meets all constraints.")
+else:
+    for i, solution in enumerate(solutions):
+        print(f"#{i+1} BEST SOLUTION")
+        print(f"Total Cost: ${solution['Cost']:.2f}")
+        print("Order Details:")
+        
+        if solution['Order'] != []:
+            for line in solution['Order']:
+                print(f" {line}")
+        print(f"Total Flowers Procured: {int(solution['TotalFlowers'])}")
+        print("-" * 20)
+
 
 del model
