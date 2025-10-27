@@ -9,11 +9,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-
+# Enum which holds flower categories as numerical codes used in the f2f API
+# todo: add all flower category numbers
 class FlowerCategory(Enum):
     ROSE = 557
     CARNATION = 453
 
+# Class for scraping product listings from Farm2Florist
 class ProductScraper:
     def __init__(self):
         self.url = None
@@ -21,9 +23,8 @@ class ProductScraper:
         self.headers = None
         self.payload = None
 
+    # Initializes the driver and sets options for headless mode + enabling access to network logs
     def _init_driver(self):
-        # Configure and start Selenium in headless mode.
-
         options = Options()
         options.add_argument("--headless=new")
         options.add_argument("--disable-gpu")
@@ -33,9 +34,11 @@ class ProductScraper:
 
         self.driver = webdriver.Chrome(options=options)
 
+    # Navigates to a flower listing page (the roses page is used here), and captures HTTP request headers+payload needed to send API requests directly
     def _capture_api_request(self):
         self.driver.get("https://www.farm2florist.com")
 
+        # We need to navigate to a flower page manually because the website uses some web framework (probably React) which uses its own navigation (i.e React Router)
         ### NAVIGATE TO ROSES PAGE ###
         wait = WebDriverWait(self.driver, 100)
         closePopupButton = wait.until(
@@ -53,22 +56,23 @@ class ProductScraper:
         )
         ### NAVIGATED TO ROSES PAGE
 
-        logs = self.driver.get_log('performance')
+        logs = self.driver.get_log('performance') # Fetch network logs
 
         for log in logs:
             message = json.loads(log["message"])["message"]
             if message["method"] == "Network.requestWillBeSent":
                 req = message["params"]["request"]
-                if req["method"] == "POST" and "products/list" in req["url"]:
+                if req["method"] == "POST" and "products/list" in req["url"]: # Check if the request is POST and that "products/list" is in the request URL
                     self.url = req["url"]
                     self.headers = req.get("headers", {})
                     self.payload = json.loads(req.get("postData", "{}"))
                     break
 
-        self.headers["Origin"] = "https://www.farm2florist.com"
+        self.headers["Origin"] = "https://www.farm2florist.com" # We need to set the Origin as farm2florist.com; otherwise we get a 503 Error
 
+    # Sends POST requests to the farm2florist API and compiles a list of JSON objects to parse
+    # Returns a list of tuple values where the first element is the JSON object and the second is the product category
     def _fetch_api_data(self):
-        # Send POST requests to API and compile list of JSON objects to parse
         result = []
 
         response = requests.post(self.url, headers=self.headers, json=self.payload)
@@ -97,9 +101,8 @@ class ProductScraper:
 
         return result
 
+    # Converts the raw data + product categories to a list of dictionaries in the format needed for the optimizer
     def _parse_products(self, data: list) -> list[dict]:
-        # Convert raw JSON into list of structured product dicts.
-
         result = []
 
         for x in data:
@@ -124,6 +127,7 @@ class ProductScraper:
 
         return result
 
+    # Public function which returns the list of dictionaries representing product listings
     def scrape_products(self, category: FlowerCategory) -> list[dict]:
         if self.driver is None:
             self._init_driver()
@@ -131,7 +135,7 @@ class ProductScraper:
         if self.url is None:
             self._capture_api_request()
 
-        self.payload["category"] = str(category.value)
+        self.payload["category"] = str(category.value) # Sets the flower type based on enum values (farm2florist API uses numerical codes to represent flower categories)
 
         api_data = self._fetch_api_data()
         return self._parse_products(api_data)
