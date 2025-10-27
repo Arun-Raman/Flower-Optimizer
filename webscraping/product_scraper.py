@@ -135,6 +135,3 @@ class ProductScraper:
 
         api_data = self._fetch_api_data()
         return self._parse_products(api_data)
-
-    def _close(self):
-        pass
