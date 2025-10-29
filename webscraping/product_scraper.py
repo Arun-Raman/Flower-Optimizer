@@ -1,4 +1,6 @@
+import itertools
 import json
+import re
 from datetime import datetime
 from enum import Enum
 
@@ -14,6 +16,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 class FlowerCategory(Enum):
     ROSE = 557
     CARNATION = 453
+    DAILY_DEALS = 806
 
 # Class for scraping product listings from Farm2Florist
 class ProductScraper:
@@ -25,6 +28,8 @@ class ProductScraper:
 
     # Initializes the driver and sets options for headless mode + enabling access to network logs
     def _init_driver(self):
+        print("Initializing Selenium Webdriver")
+
         options = Options()
         options.add_argument("--headless=new")
         options.add_argument("--disable-gpu")
@@ -34,8 +39,12 @@ class ProductScraper:
 
         self.driver = webdriver.Chrome(options=options)
 
+        print("Finished Initializing Selenium Webdriver")
+
     # Navigates to a flower listing page (the roses page is used here), and captures HTTP request headers+payload needed to send API requests directly
     def _capture_api_request(self):
+        print("Capturing API Request")
+
         self.driver.get("https://www.farm2florist.com")
 
         # We need to navigate to a flower page manually because the website uses some web framework (probably React) which uses its own navigation (i.e React Router)
@@ -70,9 +79,13 @@ class ProductScraper:
 
         self.headers["Origin"] = "https://www.farm2florist.com" # We need to set the Origin as farm2florist.com; otherwise we get a 503 Error
 
+        print("Finished Capturing API Request")
+
     # Sends POST requests to the farm2florist API and compiles a list of JSON objects to parse
     # Returns a list of tuple values where the first element is the JSON object and the second is the product category
     def _fetch_api_data(self):
+        print("Fetching API Data")
+
         result = []
 
         response = requests.post(self.url, headers=self.headers, json=self.payload)
@@ -83,9 +96,9 @@ class ProductScraper:
         num_products = data["products"]["product_count"]
         print("num_products:", num_products)
 
-        num_products = 2 # TODO: REMOVE THIS, IT IS FOR TESTING
+        # num_products = 10 # TODO: REMOVE THIS, IT IS FOR TESTING
 
-        for _ in range(num_products):
+        while(len(result) < num_products):
             response = requests.post(self.url, headers=self.headers, json=self.payload)
 
             if response.status_code != 200:
@@ -99,15 +112,60 @@ class ProductScraper:
             for listingWrapper in data["products"]["result"]:
                 result.append((list(listingWrapper.values())[0], data["products"]["cat_name"]))
 
+            print(f"{len(result)} products found ({len(result) * 100 / num_products:.2f} %)")
+
+        print("Finished Fetching API Data")
+
         return result
 
     # Converts the raw data + product categories to a list of dictionaries in the format needed for the optimizer
     def _parse_products(self, data: list) -> list[dict]:
+        print("Parsing Products")
+
         result = []
 
         for x in data:
             listing = x[0]
             category = x[1]
+
+            info = listing.get("info", {})
+            name = info.get("name", "").strip()
+
+            color = info.get("color", "Unknown").capitalize()
+            if color == "Unknown":
+                base_colors = ["Red", "Pink", "White", "Yellow", "Orange", "Purple", "Blue", "Green",
+                               "Cream", "Peach", "Coral", "Lavender", "Magenta", "Violet",
+                               "Burgundy", "Maroon", "Gold", "Silver", "Black", "Brown", "Burgundy"]
+
+                # optional
+                modifiers = ["Light", "Dark", "Hot", "Soft", "Pale", "Deep", "Bright", "Pastel", "Creamy"]
+
+                # modifiers combined with base colors
+                compound_colors = [f"{m} {c}" for m, c in itertools.product(modifiers, base_colors)]
+
+                colors = base_colors + compound_colors + [
+                    # common special descriptors
+                    "Mixed", "Bi Color", "Two Tone", "Multi Color", "Variegated",
+                    "Blush", "Ivory", "Champagne", "Apricot", "Salmon", "Mauve",
+                    "Lilac", "Plum", "Wine", "Bronze", "Copper", "Dusty Rose",
+                    "Fuchsia", "Teal", "Mint", "Sky Blue", "Navy Blue",
+                    "Tangerine", "Canary Yellow", "Lemon Yellow", "Mustard",
+                    "Rust", "Terracotta", "Creamy White", "Off White", "Snow White"]
+
+                pattern = r"\b(" + "|".join(colors) + r")\b"
+                match = re.findall(pattern, name, re.IGNORECASE)
+                if match:
+                    color = [m for m in match]
+
+            stem_length = info.get("length", 0)
+            if isinstance(stem_length, str) and stem_length.isdigit():
+                stem_length = int(stem_length)
+            if not isinstance(stem_length, int) or stem_length == 0:
+                match = re.search(r"\d+", name)
+                if match:
+                    stem_length = int(match.group())
+                else:
+                    stem_length = 0
 
             shipping_date = datetime.strptime(listing["delivery"][0]["delivery_date"], "%d-%b-%Y")
             now = datetime.now()
@@ -117,13 +175,15 @@ class ProductScraper:
                 "Identifier": listing["info"]["name"],
                 "Cost": float(listing["delivery"][0]["perboxprice"].replace("$", "")),
                 "Type": category,
-                "Color": -1,
+                "Color": color,
                 "Number of Flowers per Package": listing["delivery"][0]["qty_per_box"],
-                "Stem Length": -1,
+                "Stem Length": stem_length,
                 "Shipping Time (Hours)": shipping_time_hours,
             }
 
             result.append(entry)
+
+        print("Finished Parsing Products")
 
         return result
 
