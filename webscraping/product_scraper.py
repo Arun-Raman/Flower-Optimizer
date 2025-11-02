@@ -133,7 +133,7 @@ class ProductScraper:
 
             color = info.get("color", "Unknown").capitalize()
             if color == "Unknown":
-                base_colors = ["Red", "Pink", "White", "Yellow", "Orange", "Purple", "Blue", "Green",
+                '''base_colors = ["Red", "Pink", "White", "Yellow", "Orange", "Purple", "Blue", "Green",
                                "Cream", "Peach", "Coral", "Lavender", "Magenta", "Violet",
                                "Burgundy", "Maroon", "Gold", "Silver", "Black", "Brown", "Burgundy"]
 
@@ -152,6 +152,8 @@ class ProductScraper:
                     "Tangerine", "Canary Yellow", "Lemon Yellow", "Mustard",
                     "Rust", "Terracotta", "Creamy White", "Off White", "Snow White"]
 
+                pattern = r"\b(" + "|".join(colors) + r")\b"'''
+                colors = ['blue', 'red', 'pink', 'white', 'purple', 'orange', 'yellow']
                 pattern = r"\b(" + "|".join(colors) + r")\b"
                 match = re.findall(pattern, name, re.IGNORECASE)
                 if match:
