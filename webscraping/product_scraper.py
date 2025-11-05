@@ -6,9 +6,6 @@ from datetime import datetime
 from enum import Enum
 
 import requests
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-
 
 # Enum which holds flower categories as numerical codes used in the f2f API
 class FlowerCategory(Enum):
@@ -22,52 +19,33 @@ class FlowerCategory(Enum):
 class ProductScraper:
     def __init__(self):
         self.url = None
-        self.driver = None
         self.headers = None
         self.payload = None
 
-    # Initializes the driver and sets options for headless mode + enabling access to network logs
-    def _init_driver(self):
-        print("Initializing Selenium Webdriver")
+    # Collects and sets the necessary HTTP headers needed to call the f2f API
+    def _get_api_headers(self):
+        print("Getting API headers")
 
-        options = Options()
-        options.add_argument("--headless=new")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        options.set_capability('goog:loggingPrefs', {'performance': 'ALL'})
+        header_url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/header" # URL which gives us x-access-token
 
-        self.driver = webdriver.Chrome(options=options)
+        # Kip-Apikey does not become invalid so we can just set it to a known functional key
+        # Origin has to be farm2florist; otherwise it crashes
+        headers = {
+            "Kip-Apikey": "M2LfiIE8KBUyeRwRCajc9m58m8mXR90pN_mgqN_JvCexL61WfCSqGKSvnbjqC7ox3y4rlDzuCQWzmTgw-M-a8w8zTXg-CAZL4wt-prpT89wVTET2MbIoxiLAutPQp_LpoSvFVAK2OkLDTup1mMx3KCtVnxk-Ve_k4c7avtBcaZs",
+            "Origin": "https://www.farm2florist.com",
+        }
 
-        print("Finished Initializing Selenium Webdriver")
+        response = requests.post(header_url, headers=headers)
+        if response.status_code != 200:
+            print("Error:", response.status_code, response.text)
+            raise Exception
 
-    # Navigates to a flower listing page (the roses page is used here), and captures HTTP request headers+payload needed to send API requests directly
-    def _capture_api_request(self):
-        print("Capturing API Request")
+        response_json = json.loads(response.text)
+        headers["x-access-token"] = response_json["guest"]["api_token"]
+        self.url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/products/list"
 
-        self.driver.get("https://www.farm2florist.com/wholesale-flowers/all-flowers/Roses.html") # Navigate directly to the roses page
-        found_headers = False
-        while True: # Checks logs every 1 second to check if needed API keys are present yet
-            logs = self.driver.get_log('performance')
-            for log in logs:
-                message = json.loads(log["message"])["message"]
-                if message.get("method") == "Network.requestWillBeSent":
-                    req = message["params"]["request"]
-                    if req["method"] == "POST" and "products/list" in req["url"]:
-                        headers = req.get("headers", {})
-                        if "Kip-Apikey" in headers and "x-access-token" in headers:
-                            self.url = req["url"]
-                            self.headers = {
-                                "Kip-Apikey": headers["Kip-Apikey"],
-                                "x-access-token": headers["x-access-token"]
-                            }
-                            found_headers = True
-                            break
-            if found_headers:
-                break
-            time.sleep(1)
-
-        self.payload = json.loads(""" 
+        # Initialize the request body
+        self.payload = json.loads("""
             {
                 "category": "",
                 "color": "",
@@ -87,9 +65,9 @@ class ProductScraper:
                 "variety": ""
             }
         """)
-        self.headers["Origin"] = "https://www.farm2florist.com" # We need to set the Origin as farm2florist.com; otherwise we get a 503 Error
+        self.headers = headers
 
-        print("Finished Capturing API Request")
+        print("Successfully captured API headers")
 
     # Sends POST requests to the farm2florist API and compiles a list of JSON objects to parse
     # Returns a list of tuple values where the first element is the JSON object and the second is the product category
@@ -215,11 +193,10 @@ class ProductScraper:
 
     # Public function which returns the list of dictionaries representing product listings
     def scrape_products(self, category: FlowerCategory) -> list[dict]:
-        if self.driver is None:
-            self._init_driver()
+        # if self.driver is None:
+        #     self._init_driver()
 
-        if self.url is None:
-            self._capture_api_request()
+        self._get_api_headers()
 
         self.payload["category"] = str(category.value) # Sets the flower type based on enum values (farm2florist API uses numerical codes to represent flower categories)
 
