@@ -1,22 +1,22 @@
-import itertools
 import json
+import random
 import re
+import time
 from datetime import datetime
 from enum import Enum
 
 import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
+
 
 # Enum which holds flower categories as numerical codes used in the f2f API
-# todo: add all flower category numbers
 class FlowerCategory(Enum):
-    ROSE = 557
-    CARNATION = 453
-    DAILY_DEALS = 806
+    ROSE = "557"
+    SUNFLOWER = "575"
+    LILY = "688_691"
+    CARNATION = "453"
+    DAILY_DEALS = "806"
 
 # Class for scraping product listings from Farm2Florist
 class ProductScraper:
@@ -45,38 +45,48 @@ class ProductScraper:
     def _capture_api_request(self):
         print("Capturing API Request")
 
-        self.driver.get("https://www.farm2florist.com")
+        self.driver.get("https://www.farm2florist.com/wholesale-flowers/all-flowers/Roses.html") # Navigate directly to the roses page
+        found_headers = False
+        while True: # Checks logs every 1 second to check if needed API keys are present yet
+            logs = self.driver.get_log('performance')
+            for log in logs:
+                message = json.loads(log["message"])["message"]
+                if message.get("method") == "Network.requestWillBeSent":
+                    req = message["params"]["request"]
+                    if req["method"] == "POST" and "products/list" in req["url"]:
+                        headers = req.get("headers", {})
+                        if "Kip-Apikey" in headers and "x-access-token" in headers:
+                            self.url = req["url"]
+                            self.headers = {
+                                "Kip-Apikey": headers["Kip-Apikey"],
+                                "x-access-token": headers["x-access-token"]
+                            }
+                            found_headers = True
+                            break
+            if found_headers:
+                break
+            time.sleep(1)
 
-        # We need to navigate to a flower page manually because the website uses some web framework (probably React) which uses its own navigation (i.e React Router)
-        ### NAVIGATE TO ROSES PAGE ###
-        wait = WebDriverWait(self.driver, 100)
-        closePopupButton = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".ant-modal-close"))
-        )
-        closePopupButton.click()
-
-        roseButton = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'a[href="/wholesale-flowers/all-flowers/Roses.html"]')) # todo: find new way to navigate to desired page
-        )
-        roseButton.click()
-
-        wait.until(
-            EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/main/div[2]/div[3]/div[2]/div/div/div[1]/div[2]")) # fixme: avoid using hardcoded xpath
-        )
-        ### NAVIGATED TO ROSES PAGE
-
-        logs = self.driver.get_log('performance') # Fetch network logs
-
-        for log in logs:
-            message = json.loads(log["message"])["message"]
-            if message["method"] == "Network.requestWillBeSent":
-                req = message["params"]["request"]
-                if req["method"] == "POST" and "products/list" in req["url"]: # Check if the request is POST and that "products/list" is in the request URL
-                    self.url = req["url"]
-                    self.headers = req.get("headers", {})
-                    self.payload = json.loads(req.get("postData", "{}"))
-                    break
-
+        self.payload = json.loads(""" 
+            {
+                "category": "",
+                "color": "",
+                "currencyCode": "USD",
+                "farm": "",
+                "maxPrice": "",
+                "maxWOMargin": "",
+                "method": "",
+                "minPrice": "",
+                "minWOMargin": "",
+                "pageNo": 0,
+                "q": "",
+                "searchEndDate": "",
+                "searchStartDate": "",
+                "sort": "index",
+                "storeId": "28071",
+                "variety": ""
+            }
+        """)
         self.headers["Origin"] = "https://www.farm2florist.com" # We need to set the Origin as farm2florist.com; otherwise we get a 503 Error
 
         print("Finished Capturing API Request")
@@ -94,25 +104,39 @@ class ProductScraper:
 
         data = json.loads(response.text)
         num_products = data["products"]["product_count"]
-        print("num_products:", num_products)
+        print("Total Products:", num_products)
 
-        # num_products = 10 # TODO: REMOVE THIS, IT IS FOR TESTING
+        # num_products = 10 # REMOVE THIS, IT IS FOR TESTING
 
-        while(len(result) < num_products):
-            response = requests.post(self.url, headers=self.headers, json=self.payload)
+        while True:
+            try:
+                response = requests.post(self.url, headers=self.headers, json=self.payload)
+            except requests.RequestException as e:
+                print("Request error:", e)
+                wait_time = 5 + random.uniform(0, 3)
+                print(f"Waiting {wait_time:.2f}s before retrying...")
+                time.sleep(wait_time)
+                continue
 
             if response.status_code != 200:
                 print("Error:", response.status_code, response.text)
+                wait_time = 5 + random.uniform(0, 3)
+                print(f"Waiting {wait_time:.2f}s before retrying...")
+                time.sleep(wait_time)
+                continue  # retry same pageNo
+
+            data = response.json()
+            products = data.get("products", {})
+
+            if not products or products.get("product_count", 0) == 0:
                 break
 
-            self.payload["pageNo"] += 1
-
-            data = json.loads(response.text)
-
-            for listingWrapper in data["products"]["result"]:
-                result.append((list(listingWrapper.values())[0], data["products"]["cat_name"]))
+            for listingWrapper in products.get("result", []):
+                result.append((list(listingWrapper.values())[0], products.get("cat_name", "")))
 
             print(f"{len(result)} products found ({len(result) * 100 / num_products:.2f} %)")
+
+            self.payload["pageNo"] += 1  # only increment after success
 
         print("Finished Fetching API Data")
 
