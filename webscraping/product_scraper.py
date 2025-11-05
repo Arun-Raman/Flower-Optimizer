@@ -26,16 +26,28 @@ class ProductScraper:
     def _get_api_headers(self):
         print("Getting API headers")
 
-        header_url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/header" # URL which gives us x-access-token
+        kip_url = "https://www.farm2florist.com/env.js"
+        response = requests.get(kip_url)
+        if response.status_code != 200:
+            print("Error:", response.status_code, response.text)
+            raise Exception
+
+        match = re.search(r'REACT_APP_KIP_KEY\s*[:=]\s*"([^"]+)"', response.text)
+        if not match:
+            print("Error: could not find REACT_APP_KIP_KEY in response.text")
+            raise Exception
+        kip_key = match.group(1)
+
+        x_access_token_url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/header" # URL which gives us x-access-token
 
         # Kip-Apikey does not become invalid so we can just set it to a known functional key
         # Origin has to be farm2florist; otherwise it crashes
         headers = {
-            "Kip-Apikey": "M2LfiIE8KBUyeRwRCajc9m58m8mXR90pN_mgqN_JvCexL61WfCSqGKSvnbjqC7ox3y4rlDzuCQWzmTgw-M-a8w8zTXg-CAZL4wt-prpT89wVTET2MbIoxiLAutPQp_LpoSvFVAK2OkLDTup1mMx3KCtVnxk-Ve_k4c7avtBcaZs",
+            "Kip-Apikey": kip_key,
             "Origin": "https://www.farm2florist.com",
         }
 
-        response = requests.post(header_url, headers=headers)
+        response = requests.post(x_access_token_url, headers=headers)
         if response.status_code != 200:
             print("Error:", response.status_code, response.text)
             raise Exception
