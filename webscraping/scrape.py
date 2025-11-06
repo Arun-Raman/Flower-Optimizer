@@ -1,18 +1,15 @@
+import csv
 import os
 
-from product_scraper import ProductScraper
 from product_scraper import FlowerCategory
-
-import csv
-
+from product_scraper import ProductScraper
 
 scraper = ProductScraper()
-# data = (scraper.scrape_products(FlowerCategory.DAILY_DEALS) +
-#         scraper.scrape_products(FlowerCategory.ROSE) +
-#         scraper.scrape_products(FlowerCategory.SUNFLOWER)
-# )
-
-data = scraper.scrape_products(FlowerCategory.DAILY_DEALS)
+data = (scraper.scrape_products(FlowerCategory.DAILY_DEALS) +
+        scraper.scrape_products(FlowerCategory.ROSE) +
+        scraper.scrape_products(FlowerCategory.SUNFLOWER) +
+        scraper.scrape_products(FlowerCategory.LILY)
+)
 
 fieldnames = ["Identifier", "Cost", "Type", "Color", "Number of Flowers per Package", "Stem Length", "Shipping Time (Hours)"]
 

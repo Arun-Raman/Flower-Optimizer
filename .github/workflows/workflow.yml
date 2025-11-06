@@ -1,6 +1,8 @@
 name: workflow
 
-on: [push]
+on:
+  schedule:
+    - cron: '0 8 * * *'  # Runs every day at 8:00 utc
 
 permissions:
   contents: write
