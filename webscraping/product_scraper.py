@@ -103,16 +103,14 @@ class ProductScraper:
                 response = requests.post(self.url, headers=self.headers, json=self.payload)
             except requests.RequestException as e:
                 print("Request error:", e)
-                wait_time = 5 + random.uniform(0, 3)
-                print(f"Waiting {wait_time:.2f}s before retrying...")
-                time.sleep(wait_time)
+                print("Getting new API headers")
+                self._get_api_headers()
                 continue
 
             if response.status_code != 200:
                 print("Error:", response.status_code, response.text)
-                wait_time = 5 + random.uniform(0, 3)
-                print(f"Waiting {wait_time:.2f}s before retrying...")
-                time.sleep(wait_time)
+                print("Getting new API headers")
+                self._get_api_headers()
                 continue  # retry same pageNo
 
             data = response.json()
@@ -124,7 +122,7 @@ class ProductScraper:
             for listingWrapper in products.get("result", []):
                 result.append((list(listingWrapper.values())[0], products.get("cat_name", "")))
 
-            print(f"{len(result)} products found ({len(result) * 100 / num_products:.2f} %)")
+            print(f"{len(result)} products found ({len(result) * 100 / num_products:.2f} %) [pageNo: {self.payload['pageNo']}]")
 
             self.payload["pageNo"] += 1  # only increment after success
 
@@ -211,6 +209,7 @@ class ProductScraper:
         self._get_api_headers()
 
         self.payload["category"] = str(category.value) # Sets the flower type based on enum values (farm2florist API uses numerical codes to represent flower categories)
+        print(f"Scraping category {category.value}")
 
         api_data = self._fetch_api_data()
         return self._parse_products(api_data)
