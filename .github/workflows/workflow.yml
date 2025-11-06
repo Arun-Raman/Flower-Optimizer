@@ -23,10 +23,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-#      - name: Create data directory
-#        run: |
-#          mkdir -p data
-#          ls
+      - name: Create data directory
+        run: |
+          mkdir -p data
 
       - name: Run webscraper
         run: python webscraping/scrape.py
@@ -36,6 +35,6 @@ jobs:
           ls
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add products.csv
+          git add data/products.csv
           git commit -m "Update CSV (automated)"
           git push
