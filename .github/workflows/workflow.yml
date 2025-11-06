@@ -33,8 +33,9 @@ jobs:
 
       - name: Commit and push CSV
         run: |
+          ls
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/products.csv
+          git add products.csv
           git commit -m "Update CSV (automated)"
           git push
