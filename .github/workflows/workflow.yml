@@ -35,6 +35,8 @@ jobs:
           mkdir -p data
 
       - name: Run webscraper
+        env:
+          PYTHONUNBUFFERED: 1
         run: python webscraping/scrape.py
 
       - name: Commit and push CSV
