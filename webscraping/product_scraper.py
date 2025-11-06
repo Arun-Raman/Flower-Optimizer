@@ -98,8 +98,10 @@ class ProductScraper:
 
         # num_products = 10 # REMOVE THIS, IT IS FOR TESTING
 
+        page_number = 0
         while True:
             try:
+                self.payload["pageNo"] = page_number
                 response = requests.post(self.url, headers=self.headers, json=self.payload)
             except requests.RequestException as e:
                 print("Request error:", e)
@@ -124,7 +126,7 @@ class ProductScraper:
 
             print(f"{len(result)} products found ({len(result) * 100 / num_products:.2f} %) [pageNo: {self.payload['pageNo']}]")
 
-            self.payload["pageNo"] += 1  # only increment after success
+            page_number += 1
 
         print("Finished Fetching API Data")
 
