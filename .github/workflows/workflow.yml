@@ -3,6 +3,7 @@ name: workflow
 on:
   schedule:
     - cron: '0 8 * * *'  # Runs every day at 8:00 utc
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -10,7 +11,7 @@ permissions:
 jobs:
   scrape_products:
     runs-on: ubuntu-latest
- 
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
