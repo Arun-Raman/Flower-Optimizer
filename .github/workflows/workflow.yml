@@ -23,8 +23,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Create data directory
-        run: mkdir -p data
+#      - name: Create data directory
+#        run: |
+#          mkdir -p data
+#          ls
 
       - name: Run webscraper
         run: python webscraping/scrape.py
