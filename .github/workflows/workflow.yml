@@ -38,6 +38,8 @@ jobs:
           ls
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin
+          git checkout scraped-data
           git add data/products.csv
-          git commit -m "Update CSV (automated)"
-          git push
+          git commit -m "Update CSV (automated)" || echo "No changes to commit"
+          git push origin scraped-data
