@@ -36,6 +36,6 @@ jobs:
           ls
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add products.csv
+          git add webscraping/products.csv
           git commit -m "Update CSV (automated)"
           git push

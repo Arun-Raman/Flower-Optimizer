@@ -1,5 +1,3 @@
-import os
-
 from product_scraper import ProductScraper
 from product_scraper import FlowerCategory
 
@@ -16,11 +14,9 @@ data = scraper.scrape_products(FlowerCategory.DAILY_DEALS)
 
 fieldnames = ["Identifier", "Cost", "Type", "Color", "Number of Flowers per Package", "Stem Length", "Shipping Time (Hours)"]
 
-output_dir = "../data"
 output_filename = "products.csv"
-os.makedirs(output_dir, exist_ok=True)
 
-with open(os.path.join(output_dir, output_filename), 'w', newline='') as csvfile:
+with open(output_filename, 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
     writer.writeheader()
