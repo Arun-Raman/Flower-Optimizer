@@ -1,8 +1,11 @@
 name: workflow
 
 on:
+  push:
+    branches:
+      - scraped-data
   schedule:
-    - cron: '0 8 * * *'  # Runs every day at 8:00 utc
+    - cron: '0 8 * * *'
   workflow_dispatch:
 
 permissions:
@@ -13,9 +16,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout scraped-data branch
         uses: actions/checkout@v3
         with:
+          ref: scraped-data
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
@@ -35,11 +39,8 @@ jobs:
 
       - name: Commit and push CSV
         run: |
-          ls
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin
-          git checkout scraped-data
           git add data/products.csv
           git commit -m "Update CSV (automated)" || echo "No changes to commit"
-          git push origin scraped-data
+          git push
