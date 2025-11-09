@@ -99,8 +99,7 @@ class ProductScraper:
                 self._get_api_headers()
                 continue  # retry same pageNo
 
-            # consecutive_failed_requests = 0
-            consecutive_failed_requests += 1
+            consecutive_failed_requests = 0
 
             data = response.json()
             products = data.get("products", {})
@@ -212,9 +211,13 @@ class ProductScraper:
         ]
         output_dir = "data"
         os.makedirs(output_dir, exist_ok=True)
-        with open(os.path.join(output_dir, filename), 'a', newline='') as csvfile:
+        filepath = os.path.join(output_dir, filename)
+
+        write_header = not os.path.exists(filepath)
+        with open(filepath, 'a', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
+            if write_header:
+                writer.writeheader()
             writer.writerows(data)
         print(f"Data written to {filename}")
 
