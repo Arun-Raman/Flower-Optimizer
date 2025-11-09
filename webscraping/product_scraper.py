@@ -7,6 +7,7 @@ from enum import Enum
 
 import requests
 
+
 # Enum which holds flower categories as numerical codes used in the f2f API
 class FlowerCategory(Enum):
     ROSE = "557"
@@ -18,6 +19,7 @@ class FlowerCategory(Enum):
 # Class for scraping product listings from Farm2Florist
 class ProductScraper:
     def __init__(self):
+        self.session = requests.Session()
         self.url = None
         self.headers = None
         self.payload = None
@@ -27,7 +29,7 @@ class ProductScraper:
         print("Getting API headers")
 
         kip_url = "https://www.farm2florist.com/env.js"
-        response = requests.get(kip_url)
+        response = self.session.get(kip_url)
         if response.status_code != 200:
             print("Error:", response.status_code, response.text)
             raise Exception
@@ -45,9 +47,10 @@ class ProductScraper:
         headers = {
             "Kip-Apikey": kip_key,
             "Origin": "https://www.farm2florist.com",
+            "Connection": "close"
         }
 
-        response = requests.post(x_access_token_url, headers=headers)
+        response = self.session.post(x_access_token_url, headers=headers)
         if response.status_code != 200:
             print("Error:", response.status_code, response.text)
             raise Exception
@@ -55,28 +58,6 @@ class ProductScraper:
         response_json = json.loads(response.text)
         headers["x-access-token"] = response_json["guest"]["api_token"]
         self.url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/products/list"
-
-        # Initialize the request body
-        self.payload = json.loads("""
-            {
-                "category": "",
-                "color": "",
-                "currencyCode": "USD",
-                "farm": "",
-                "maxPrice": "",
-                "maxWOMargin": "",
-                "method": "",
-                "minPrice": "",
-                "minWOMargin": "",
-                "pageNo": 0,
-                "q": "",
-                "searchEndDate": "",
-                "searchStartDate": "",
-                "sort": "index",
-                "storeId": "28071",
-                "variety": ""
-            }
-        """)
         self.headers = headers
 
         print("Successfully captured API headers")
@@ -88,7 +69,7 @@ class ProductScraper:
 
         result = []
 
-        response = requests.post(self.url, headers=self.headers, json=self.payload)
+        response = self.session.post(self.url, headers=self.headers, json=self.payload)
         if response.status_code != 200:
             print("Error:", response.status_code, response.text)
 
@@ -96,24 +77,30 @@ class ProductScraper:
         num_products = data["products"]["product_count"]
         print("Total Products:", num_products)
 
-        # num_products = 10 # REMOVE THIS, IT IS FOR TESTING
-
-        page_number = 0
+        consecutive_failed_requests = 0
         while True:
-            try:
-                self.payload["pageNo"] = page_number
-                response = requests.post(self.url, headers=self.headers, json=self.payload)
-            except requests.RequestException as e:
-                print("Request error:", e)
-                print("Getting new API headers")
-                self._get_api_headers()
-                continue
+            if consecutive_failed_requests > 3:
+                print("Error: too many failed requests")
+                self._write_csv(self._parse_products(result))
+                self._checkpoint_and_restart()
+
+            response = self.session.post(self.url, headers=self.headers, json=self.payload)
 
             if response.status_code != 200:
+                consecutive_failed_requests += 1
+
                 print("Error:", response.status_code, response.text)
-                print("Getting new API headers")
+
+                wait = consecutive_failed_requests * 2 + random.uniform(0, 3)
+                print(f"Waiting {wait:.2f} seconds before retrying...")
+                time.sleep(wait)
+
+                print("Refreshing API headers")
                 self._get_api_headers()
                 continue  # retry same pageNo
+
+            # consecutive_failed_requests = 0
+            consecutive_failed_requests += 1
 
             data = response.json()
             products = data.get("products", {})
@@ -125,8 +112,9 @@ class ProductScraper:
                 result.append((list(listingWrapper.values())[0], products.get("cat_name", "")))
 
             print(f"{len(result)} products found ({len(result) * 100 / num_products:.2f} %) [pageNo: {self.payload['pageNo']}]")
+            self.payload["pageNo"] += 1
 
-            page_number += 1
+            time.sleep(random.uniform(0.5, 1.5))
 
         print("Finished Fetching API Data")
 
@@ -203,15 +191,57 @@ class ProductScraper:
 
         return result
 
-    # Public function which returns the list of dictionaries representing product listings
-    def scrape_products(self, category: FlowerCategory) -> list[dict]:
-        # if self.driver is None:
-        #     self._init_driver()
+    def _checkpoint_and_restart(self):
+        print("Checkpointing for restart")
 
+        checkpoint = {
+            "category": self.payload["category"],
+            "page_number": self.payload["pageNo"]
+        }
+
+        with open("checkpoint.json", "w") as f:
+            json.dump(checkpoint, f, indent=2)
+
+        raise RuntimeError("RESTART_REQUIRED")
+
+    def _write_csv(self, data, filename="products.csv"):
+        import csv, os
+        fieldnames = [
+            "Identifier", "Cost", "Type", "Color",
+            "Number of Flowers per Package", "Stem Length", "Shipping Time (Hours)"
+        ]
+        output_dir = "data"
+        os.makedirs(output_dir, exist_ok=True)
+        with open(os.path.join(output_dir, filename), 'a', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(data)
+        print(f"Data written to {filename}")
+
+    # Public function which returns the list of dictionaries representing product listings
+    def scrape_products(self, category: FlowerCategory, from_page_no: int = 0):
         self._get_api_headers()
 
-        self.payload["category"] = str(category.value) # Sets the flower type based on enum values (farm2florist API uses numerical codes to represent flower categories)
+        self.payload = {
+            "category": str(category.value),
+            "pageNo": from_page_no,
+            "color": "",
+            "currencyCode": "USD",
+            "farm": "",
+            "maxPrice": "",
+            "maxWOMargin": "",
+            "method": "",
+            "minPrice": "",
+            "minWOMargin": "",
+            "q": "",
+            "searchEndDate": "",
+            "searchStartDate": "",
+            "sort": "index",
+            "storeId": "28071",
+            "variety": ""
+        }
+
         print(f"Scraping category {category.value}")
 
         api_data = self._fetch_api_data()
-        return self._parse_products(api_data)
+        self._write_csv(self._parse_products(api_data))
