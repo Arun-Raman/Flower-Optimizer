@@ -2,8 +2,10 @@ import json
 import random
 import re
 import time
+import colorsys
 from datetime import datetime
 from enum import Enum
+from matplotlib import colors
 
 import requests
 
@@ -125,40 +127,57 @@ class ProductScraper:
 
         result = []
 
+        # gets list of ~950 matlab colors for extracting colors from listing name
+        colors_categorized = {'red': [], 'orange': [], 'yellow': [], 'green': [], 'blue': [], 'purple': [], 'pink': [], 'white': [], 'other': []}
+        all_colors = colors.get_named_colors_mapping()
+        for name, val in all_colors.items():
+            r, g, b = colors.to_rgb(val)
+            h, s, v = colorsys.rgb_to_hsv(r, g, b)
+
+            if s < 0.2 and v > 0.8:
+                colors_categorized['white'].append(name)
+
+            if 0.0 <= h < 0.05:
+                colors_categorized['red'].append(name)
+            elif 0.05 <= h < 0.15:
+                colors_categorized['orange'].append(name)
+            elif 0.15 <= h < 0.25:
+                colors_categorized['yellow'].append(name)
+            elif 0.25 <= h < 0.45:
+                colors_categorized['green'].append(name)
+            elif 0.45 <= h < 0.65:
+                colors_categorized['blue'].append(name)
+            elif 0.65 <= h < 0.85:
+                colors_categorized['purple'].append(name)
+            elif 0.85 <= h < 1.0:
+                colors_categorized['pink'].append(name)
+            else:
+                colors_categorized['other'].append(name)
+
+        flat_colors = []
+        for category, color_list in colors_categorized.items():
+            flat_colors.append(category)
+            for c in color_list:
+                flat_colors.append(c)
+        pattern = r'\b(' + '|'.join(re.escape(c) for c in flat_colors) + r')\b'
+        color_regex = re.compile(pattern, re.IGNORECASE)
+
         for x in data:
             listing = x[0]
             category = x[1]
 
             info = listing.get("info", {})
-            name = info.get("name", "").strip()
+            name = str(info.get("name", "").strip())
 
+            color_cat = 'placeholder'
             color = info.get("color", "Unknown").capitalize()
-            if color == "Unknown":
-                '''base_colors = ["Red", "Pink", "White", "Yellow", "Orange", "Purple", "Blue", "Green",
-                               "Cream", "Peach", "Coral", "Lavender", "Magenta", "Violet",
-                               "Burgundy", "Maroon", "Gold", "Silver", "Black", "Brown", "Burgundy"]
-
-                # optional
-                modifiers = ["Light", "Dark", "Hot", "Soft", "Pale", "Deep", "Bright", "Pastel", "Creamy"]
-
-                # modifiers combined with base colors
-                compound_colors = [f"{m} {c}" for m, c in itertools.product(modifiers, base_colors)]
-
-                colors = base_colors + compound_colors + [
-                    # common special descriptors
-                    "Mixed", "Bi Color", "Two Tone", "Multi Color", "Variegated",
-                    "Blush", "Ivory", "Champagne", "Apricot", "Salmon", "Mauve",
-                    "Lilac", "Plum", "Wine", "Bronze", "Copper", "Dusty Rose",
-                    "Fuchsia", "Teal", "Mint", "Sky Blue", "Navy Blue",
-                    "Tangerine", "Canary Yellow", "Lemon Yellow", "Mustard",
-                    "Rust", "Terracotta", "Creamy White", "Off White", "Snow White"]
-
-                pattern = r"\b(" + "|".join(colors) + r")\b"'''
-                colors = ['blue', 'red', 'pink', 'white', 'purple', 'orange', 'yellow']
-                pattern = r"\b(" + "|".join(colors) + r")\b"
-                match = re.findall(pattern, name, re.IGNORECASE)
-                if match:
-                    color = [m for m in match]
+            match = color_regex.search(name.lower())
+            if match:
+                if color == 'Unknown':
+                    color = match.group(1)
+                for category, color_list in colors_categorized.items():
+                    if color in color_list:
+                        color_cat = category
 
             stem_length = info.get("length", 0)
             if isinstance(stem_length, str) and stem_length.isdigit():
@@ -179,6 +198,7 @@ class ProductScraper:
                 "Cost": float(listing["delivery"][0]["perboxprice"].replace("$", "")),
                 "Type": category,
                 "Color": color,
+                "Color Category": color_cat,
                 "Number of Flowers per Package": listing["delivery"][0]["qty_per_box"],
                 "Stem Length": stem_length,
                 "Shipping Time (Hours)": shipping_time_hours,
@@ -206,7 +226,7 @@ class ProductScraper:
     def _write_csv(self, data, filename="products.csv"):
         import csv, os
         fieldnames = [
-            "Identifier", "Cost", "Type", "Color",
+            "Identifier", "Cost", "Type", "Color", "Color Category",
             "Number of Flowers per Package", "Stem Length", "Shipping Time (Hours)"
         ]
         output_dir = "data"
