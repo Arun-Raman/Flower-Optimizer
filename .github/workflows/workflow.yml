@@ -1,9 +1,6 @@
 name: workflow
 
 on:
-  push:
-    branches:
-      - scraped-data
   schedule:
     - cron: '0 8 * * *'
   workflow_dispatch:
