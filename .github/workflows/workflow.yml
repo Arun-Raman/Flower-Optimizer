@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout scraped-data branch
-        uses: actions/checkout@v3
-        with:
-          ref: scraped-data
-          token: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Checkout scraped-data branch
+#        uses: actions/checkout@v3
+#        with:
+#          ref: scraped-data
+#          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -38,7 +38,7 @@ jobs:
         timeout-minutes: 10
         env:
           PYTHONUNBUFFERED: 1
-        run: python webscraping/scrape.py
+        run: python webscraping/main.py
 
 #      - name: Commit and push CSV
 #        run: |

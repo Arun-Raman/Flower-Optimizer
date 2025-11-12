@@ -217,7 +217,6 @@ class ProductScraper:
         print("Checkpointing for restart")
 
         checkpoint = {
-            "category": self.payload["category"],
             "page_number": self.payload["pageNo"]
         }
 
@@ -245,11 +244,13 @@ class ProductScraper:
         print(f"Data written to {filename}")
 
     # Public function which returns the list of dictionaries representing product listings
-    def scrape_products(self, category: FlowerCategory, from_page_no: int = 0):
+    def scrape_products(self, categories: list[FlowerCategory], from_page_no: int = 0):
         self._get_api_headers()
 
+        category_str = "_".join([category.value for category in categories]).strip("_")
+
         self.payload = {
-            "category": str(category.value),
+            "category": category_str,
             "pageNo": from_page_no,
             "color": "",
             "currencyCode": "USD",
@@ -267,7 +268,7 @@ class ProductScraper:
             "variety": ""
         }
 
-        print(f"Scraping category {category.value}")
+        print(f"Scraping category {category_str}")
 
         api_data = self._fetch_api_data()
         self._write_csv(self._parse_products(api_data))
