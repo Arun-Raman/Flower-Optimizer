@@ -171,10 +171,12 @@ class ProductScraper:
 
             color_cat = 'placeholder'
             color = info.get("color", "Unknown").capitalize()
+            color_listed = True
             match = color_regex.search(name.lower())
             if match:
                 if color == 'Unknown':
                     color = match.group(1)
+                    color_listed = False
                 for category, color_list in colors_categorized.items():
                     if color in color_list:
                         color_cat = category
@@ -199,6 +201,7 @@ class ProductScraper:
                 "Type": category,
                 "Color": color,
                 "Color Category": color_cat,
+                "Color Listed": color_listed,
                 "Number of Flowers per Package": listing["delivery"][0]["qty_per_box"],
                 "Stem Length": stem_length,
                 "Shipping Time (Hours)": shipping_time_hours,
@@ -226,7 +229,7 @@ class ProductScraper:
     def _write_csv(self, data, filename="products.csv"):
         import csv, os
         fieldnames = [
-            "Identifier", "Cost", "Type", "Color", "Color Category",
+            "Identifier", "Cost", "Type", "Color", "Color Category", "Color Listed",
             "Number of Flowers per Package", "Stem Length", "Shipping Time (Hours)"
         ]
         output_dir = "data"
