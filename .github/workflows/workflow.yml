@@ -35,7 +35,7 @@ jobs:
           mkdir -p data
 
       - name: Run webscraper
-        timeout-minutes: 10
+        timeout-minutes: 15
         env:
           PYTHONUNBUFFERED: 1
         run: python webscraping/main.py
@@ -58,8 +58,8 @@ jobs:
 #          gh release view $RELEASE_TAG || gh release create $RELEASE_TAG --title "$RELEASE_NAME" --notes "Latest CSV data"
 #          gh release upload $RELEASE_TAG data/products.csv --clobber
 
-      - name: Upload CSV to Google Drive
-        env:
-          GDRIVE_CREDENTIALS: ${{ secrets.GDRIVE_CREDENTIALS }}
-        run: |
-          python webscraping/upload_to_gdrive.py data/products.csv 1VX8IXy8QIjf0WI92R_k-ws7RMEtkmhW5
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: products_csv
+          path: data/products.csv
