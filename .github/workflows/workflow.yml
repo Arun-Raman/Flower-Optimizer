@@ -20,7 +20,7 @@ jobs:
 #          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -48,18 +48,18 @@ jobs:
 #          git commit -m "Update CSV (automated)" || echo "No changes to commit"
 #          git push
 
-#      - name: Create or update release and upload CSV
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.REPO_RELEASE_TOKEN }}
-#        run: |
-#          RELEASE_TAG="latest-csv"
-#          RELEASE_NAME="Automated CSV Release"
-#
-#          gh release view $RELEASE_TAG || gh release create $RELEASE_TAG --title "$RELEASE_NAME" --notes "Latest CSV data"
-#          gh release upload $RELEASE_TAG data/products.csv --clobber
+      - name: Create or update release and upload CSV
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_RELEASE_TOKEN }}
+        run: |
+          RELEASE_TAG="latest-csv"
+          RELEASE_NAME="Automated CSV Release"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: products_csv
-          path: data/products.csv
+          gh release view $RELEASE_TAG || gh release create $RELEASE_TAG --title "$RELEASE_NAME" --notes "Latest CSV data"
+          gh release upload $RELEASE_TAG data/products.csv --clobber
+
+#      - name: Upload artifact
+#        uses: actions/upload-artifact@v5
+#        with:
+#          name: products_csv
+#          path: data/products.csv
