@@ -13,12 +13,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-#      - name: Checkout scraped-data branch
-#        uses: actions/checkout@v3
-#        with:
-#          ref: scraped-data
-#          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Checkout repository
         uses: actions/checkout@v5
 
@@ -40,26 +34,12 @@ jobs:
           PYTHONUNBUFFERED: 1
         run: python webscraping/main.py
 
-#      - name: Commit and push CSV
-#        run: |
-#          git config user.name "github-actions[bot]"
-#          git config user.email "github-actions[bot]@users.noreply.github.com"
-#          git add data/products.csv
-#          git commit -m "Update CSV (automated)" || echo "No changes to commit"
-#          git push
-
       - name: Create or update release and upload CSV
         env:
-          GITHUB_TOKEN: ${{ secrets.REPO_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.REPO_RELEASE_TOKEN }}
         run: |
           RELEASE_TAG="latest-csv"
           RELEASE_NAME="Automated CSV Release"
 
           gh release view $RELEASE_TAG || gh release create $RELEASE_TAG --title "$RELEASE_NAME" --notes "Latest CSV data"
           gh release upload $RELEASE_TAG data/products.csv --clobber
-
-#      - name: Upload artifact
-#        uses: actions/upload-artifact@v5
-#        with:
-#          name: products_csv
-#          path: data/products.csv
