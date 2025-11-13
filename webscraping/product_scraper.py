@@ -75,9 +75,9 @@ class ProductScraper:
         if response.status_code != 200:
             print("Error:", response.status_code, response.text)
 
-        data = json.loads(response.text)
-        num_products = data["products"]["product_count"]
-        print("Total Products:", num_products)
+        # data = response.json()
+        # num_products = data["products"]["product_count"]
+        # print("Total Products:", num_products)
 
         consecutive_failed_requests = 0
         while True:
@@ -96,15 +96,27 @@ class ProductScraper:
                 wait = consecutive_failed_requests * 2 + random.uniform(0, 3)
                 print(f"Waiting {wait:.2f} seconds before retrying...")
                 time.sleep(wait)
+                #
+                # print("Refreshing API headers")
+                # self._get_api_headers()
+                continue  # retry same pageNo
 
+            try:
+                data = response.json()
+            except json.JSONDecodeError:
+                print("Error: received invalid JSON (possibly HTML error page). Retrying...")
+                consecutive_failed_requests += 1
+                wait = consecutive_failed_requests * 2 + random.uniform(0, 3)
+                print(f"Waiting {wait:.2f} seconds before retrying...")
+                time.sleep(wait)
                 print("Refreshing API headers")
                 self._get_api_headers()
-                continue  # retry same pageNo
+                continue
 
             consecutive_failed_requests = 0
 
-            data = response.json()
             products = data.get("products", {})
+            num_products = data["products"]["product_count"]
 
             if not products or products.get("product_count", 0) == 0:
                 break
