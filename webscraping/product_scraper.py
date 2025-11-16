@@ -6,6 +6,7 @@ import colorsys
 from datetime import datetime
 from enum import Enum
 from matplotlib import colors
+from transformers import pipeline
 
 import requests
 
@@ -138,6 +139,7 @@ class ProductScraper:
         print("Parsing Products")
 
         result = []
+        classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli") # embeddings model
 
         # gets list of ~950 matlab colors for extracting colors from listing name
         colors_categorized = {'red': [], 'orange': [], 'yellow': [], 'green': [], 'blue': [], 'purple': [], 'pink': [], 'white': [], 'other': []}
@@ -184,14 +186,38 @@ class ProductScraper:
             color_cat = 'placeholder'
             color = info.get("color", "Unknown").capitalize()
             color_listed = True
-            match = color_regex.search(name.lower())
-            if match:
-                if color == 'Unknown':
-                    color = match.group(1)
+            
+            if "sunf" in name.lower(): # sunflowers are yellow
+                if color == "Unknown":
                     color_listed = False
-                for category, color_list in colors_categorized.items():
-                    if color in color_list:
-                        color_cat = category
+                    color = color_cat = "yellow"
+            else:
+                if "coral" in name.lower():
+                    color_listed = False
+                    color = color_cat = "pink"
+                elif "ros ylw" in name.lower(): # these are NOT yellow and embeddings mistakenly makes some red
+                    color_listed = False
+                else:
+                    match = color_regex.search(name.lower())
+                    if match:
+                        if color == 'Unknown':
+                            color = match.group(1)
+                            color_listed = False
+                        for category, color_list in colors_categorized.items():
+                            if color in color_list:
+                                color_cat = category
+                    else: # use embeddings model
+                        print("======================================================================")
+                        print("Using embeddings model:", name)
+                        labels = ["red", "pink", "yellow", "white", "purple", "blue", "orange", "green"]
+                        embresult = classifier(name.lower(), labels)
+
+                        print("confidence:", embresult["scores"][0])
+                        if embresult["scores"][0] > 0.5: # high confidence
+                            color = embresult["labels"][0]
+                            color_cat = color
+                            print("color:", color)
+                        print("======================================================================")
 
             stem_length = info.get("length", 0)
             if isinstance(stem_length, str) and stem_length.isdigit():
