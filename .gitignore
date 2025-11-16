@@ -25,3 +25,6 @@ dist-ssr
 
 # Webscraper checkpoint file
 checkpoint.json
+
+# pycache
+__pycache__/
