@@ -13,8 +13,8 @@ def main():
         start_page_number = checkpoint["page_number"]
 
     categories = [
-        FlowerCategory.ROSE,
         FlowerCategory.DAILY_DEALS,
+        FlowerCategory.ROSE,
         FlowerCategory.LILY,
         FlowerCategory.SUNFLOWER
     ]
@@ -22,7 +22,9 @@ def main():
     scraper = ProductScraper()
 
     try:
-        scraper.scrape_products(categories, start_page_number)
+        for category in categories:
+            scraper.scrape_products([category], start_page_number)
+
 
     except RuntimeError as e:
         if "RESTART_REQUIRED" in str(e):

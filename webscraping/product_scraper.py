@@ -3,6 +3,7 @@ import random
 import re
 import time
 import colorsys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from enum import Enum
 from matplotlib import colors
@@ -21,6 +22,8 @@ class FlowerCategory(Enum):
 
 # Class for scraping product listings from Farm2Florist
 class ProductScraper:
+    MAX_PAGE_RETRIES = 3
+
     def __init__(self):
         self.session = requests.Session()
         self.url = None
@@ -84,70 +87,118 @@ class ProductScraper:
         if response.status_code != 200:
             print("Error:", response.status_code, response.text)
 
-        # data = response.json()
-        # num_products = data["products"]["product_count"]
-        # print("Total Products:", num_products)
+        data = response.json()
+        num_products = data["products"]["product_count"]
+        print("Total Products:", num_products)
 
-        consecutive_failed_requests = 0
-        while True:
-            if consecutive_failed_requests > 3:
-                print("Error: too many failed requests")
-                self._write_csv(self._parse_products(result))
-                self._checkpoint_and_restart()
+        result = self._fetch_all_pages(self.url, self.headers, self.payload, 0, num_products // 12) # todo: get rid of magic number (12)
+        print(f"Result length: {len(result)}")
 
-            response = self.session.post(self.url, headers=self.headers, json=self.payload)
-
-            if response.status_code != 200:
-                consecutive_failed_requests += 1
-
-                print("Error:", response.status_code, response.text)
-
-                wait = consecutive_failed_requests * 2 + random.uniform(0, 3)
-                print(f"Waiting {wait:.2f} seconds before retrying...")
-                time.sleep(wait)
-                #
-                # print("Refreshing API headers")
-                # self._get_api_headers()
-                continue  # retry same pageNo
-
-            try:
-                data = response.json()
-            except json.JSONDecodeError:
-                print("Error: received invalid JSON (possibly HTML error page). Retrying...")
-                consecutive_failed_requests += 1
-                wait = consecutive_failed_requests * 2 + random.uniform(0, 3)
-                print(f"Waiting {wait:.2f} seconds before retrying...")
-                time.sleep(wait)
-                print("Refreshing API headers")
-                self._get_api_headers()
-                continue
-
-            consecutive_failed_requests = 0
-
-            products = data.get("products", {})
-            num_products = data["products"]["product_count"]
-
-            if not products or products.get("product_count", 0) == 0:
-                break
-
-            for listingWrapper in products.get("result", []):
-                result.append((list(listingWrapper.values())[0], products.get("cat_name", "")))
-
-            print(f"{len(result)} products found ({len(result) * 100 / num_products:.2f} %) [pageNo: {self.payload['pageNo']}]")
-            self.payload["pageNo"] += 1
-
-            time.sleep(random.uniform(0.5, 1.5))
+        # consecutive_failed_requests = 0
+        # while True:
+        #     if consecutive_failed_requests > 3:
+        #         print("Error: too many failed requests")
+        #         self._write_csv(self._parse_products(result))
+        #         self._checkpoint_and_restart()
+        #
+        #     response = self.session.post(self.url, headers=self.headers, json=self.payload)
+        #
+        #     if response.status_code != 200:
+        #         consecutive_failed_requests += 1
+        #
+        #         print("Error:", response.status_code, response.text)
+        #
+        #         wait = consecutive_failed_requests * 2 + random.uniform(0, 3)
+        #         print(f"Waiting {wait:.2f} seconds before retrying...")
+        #         time.sleep(wait)
+        #         #
+        #         # print("Refreshing API headers")
+        #         # self._get_api_headers()
+        #         continue  # retry same pageNo
+        #
+        #     try:
+        #         data = response.json()
+        #     except json.JSONDecodeError:
+        #         print("Error: received invalid JSON (possibly HTML error page). Retrying...")
+        #         consecutive_failed_requests += 1
+        #         wait = consecutive_failed_requests * 2 + random.uniform(0, 3)
+        #         print(f"Waiting {wait:.2f} seconds before retrying...")
+        #         time.sleep(wait)
+        #         print("Refreshing API headers")
+        #         self._get_api_headers()
+        #         continue
+        #
+        #     consecutive_failed_requests = 0
+        #
+        #     products = data.get("products", {})
+        #     num_products = data["products"]["product_count"]
+        #
+        #     if not products or products.get("product_count", 0) == 0:
+        #         break
+        #
+        #     for listingWrapper in products.get("result", []):
+        #         result.append((list(listingWrapper.values())[0], products.get("cat_name", "")))
+        #
+        #     print(f"{len(result)} products found ({len(result) * 100 / num_products:.2f} %) [pageNo: {self.payload['pageNo']}]")
+        #     self.payload["pageNo"] += 1
+        #
+        #     time.sleep(random.uniform(0.5, 1.5))
 
         print("Finished Fetching API Data")
 
         return result
+
+    def _fetch_all_pages(self, url, headers, payload_template, start_page, end_page):
+        pending = {p: 0 for p in range(start_page, end_page + 1)}
+        result = []
+
+        with ThreadPoolExecutor(max_workers=16) as ex:
+            session = requests.Session()
+
+            def submit_page(page):
+                return ex.submit(self._fetch_page, session, url, headers, payload_template, page), page
+
+            future_map = dict(submit_page(p) for p in pending)
+
+            while future_map:
+                for future in as_completed(future_map):
+                    page = future_map.pop(future)
+                    try:
+                        data = future.result()
+                        products = data.get("products", {})
+                        for listingWrapper in products.get("result", []):
+                            result.append((list(listingWrapper.values())[0], products.get("cat_name", "NA"))) # todo: find better way to set category
+
+                    except Exception as e:
+                        print(f"Page {page} failed: \"{e}\"")
+
+                        retries = pending[page] + 1
+                        if retries > self.MAX_PAGE_RETRIES:
+                            print(f"Page {page} exhausted retries: \"{e}\"")
+                            continue
+                        pending[page] = retries
+                        time.sleep(1 * retries)
+                        fut_new, page_new = submit_page(page)
+                        future_map[fut_new] = page_new
+
+        return result
+
+    def _fetch_page(self, session, url, headers, payload_template, page_no):
+        print(f"Fetching Page {page_no}")
+
+        payload = payload_template.copy()
+        payload["pageNo"] = page_no
+
+        resp = session.post(url, headers=headers, json=payload, timeout=10)
+        resp.raise_for_status()
+        return resp.json()
 
     # Converts the raw data + product categories to a list of dictionaries in the format needed for the optimizer
     def _parse_products(self, data: list) -> list[dict]:
         print("Parsing Products")
 
         result = []
-        classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli") # embeddings model
+        # classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli") # embeddings model
 
         # gets list of ~950 matlab colors for extracting colors from listing name
         colors_categorized = {'red': [], 'orange': [], 'yellow': [], 'green': [], 'blue': [], 'purple': [], 'pink': [], 'white': [], 'other': []}
@@ -177,8 +228,8 @@ class ProductScraper:
                 colors_categorized['other'].append(name)
 
         flat_colors = []
-        for category, color_list in colors_categorized.items():
-            flat_colors.append(category)
+        for cat, color_list in colors_categorized.items():
+            flat_colors.append(cat)
             for c in color_list:
                 flat_colors.append(c)
         pattern = r'\b(' + '|'.join(re.escape(c) for c in flat_colors) + r')\b'
@@ -186,7 +237,7 @@ class ProductScraper:
 
         for x in data:
             listing = x[0]
-            category = x[1]
+            flower_category = x[1]
 
             info = listing.get("info", {})
             name = str(info.get("name", "").strip())
@@ -194,7 +245,7 @@ class ProductScraper:
             color_cat = 'placeholder'
             color = info.get("color", "Unknown").capitalize()
             color_listed = True
-            
+
             if "sunf" in name.lower(): # sunflowers are yellow
                 if color == "Unknown":
                     color_listed = False
@@ -211,10 +262,11 @@ class ProductScraper:
                         if color == 'Unknown':
                             color = match.group(1)
                             color_listed = False
-                        for category, color_list in colors_categorized.items():
+                        for cat, color_list in colors_categorized.items():
                             if color in color_list:
-                                color_cat = category
+                                color_cat = cat
                     else: # use embeddings model
+                        continue
                         print("======================================================================")
                         print("Using embeddings model:", name)
                         labels = ["red", "pink", "yellow", "white", "purple", "blue", "orange", "green"]
@@ -244,7 +296,7 @@ class ProductScraper:
             entry = {
                 "Identifier": listing["info"]["name"],
                 "Cost": float(listing["delivery"][0]["perboxprice"].replace("$", "")),
-                "Type": category,
+                "Type": flower_category,
                 "Color": color,
                 "Color Category": color_cat,
                 "Color Listed": color_listed,
@@ -295,6 +347,8 @@ class ProductScraper:
 
         category_str = "_".join([category.value for category in categories]).strip("_")
 
+        print(f"Scraping category: {category_str}")
+
         self.payload = {
             "category": category_str,
             "pageNo": from_page_no,
@@ -313,8 +367,6 @@ class ProductScraper:
             "storeId": "28071",
             "variety": ""
         }
-
-        print(f"Scraping category {category_str}")
 
         api_data = self._fetch_api_data()
         self._write_csv(self._parse_products(api_data))
