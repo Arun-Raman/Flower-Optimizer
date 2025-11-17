@@ -32,10 +32,18 @@ class ProductScraper:
         print("Getting API headers")
 
         kip_url = "https://www.farm2florist.com/env.js"
-        response = self.session.get(kip_url)
-        if response.status_code != 200:
-            print("Error:", response.status_code, response.text)
-            raise Exception
+
+        try:
+            response = self.session.get(kip_url)
+            response.raise_for_status()
+            if response.status_code != 200:
+                print("Error:", response.status_code, response.text)
+                raise Exception
+        except Exception:
+            print("Retrying...")
+
+            time.sleep(random.uniform(0.5, 1.5))
+            self._get_api_headers()
 
         match = re.search(r'REACT_APP_KIP_KEY\s*[:=]\s*"([^"]+)"', response.text)
         if not match:
