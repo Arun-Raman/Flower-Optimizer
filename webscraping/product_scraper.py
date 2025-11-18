@@ -198,7 +198,7 @@ class ProductScraper:
         print("Parsing Products")
 
         result = []
-        # classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli") # embeddings model
+        classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli") # embeddings model
 
         # gets list of ~950 matlab colors for extracting colors from listing name
         colors_categorized = {'red': [], 'orange': [], 'yellow': [], 'green': [], 'blue': [], 'purple': [], 'pink': [], 'white': [], 'other': []}
@@ -266,7 +266,7 @@ class ProductScraper:
                             if color in color_list:
                                 color_cat = cat
                     else: # use embeddings model
-                        continue
+                        # continue
                         print("======================================================================")
                         print("Using embeddings model:", name)
                         labels = ["red", "pink", "yellow", "white", "purple", "blue", "orange", "green"]
