@@ -7,7 +7,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from enum import Enum
 from matplotlib import colors
-from transformers import pipeline
+import spacy
+import numpy as np
+#from transformers import pipeline
 
 import requests
 
@@ -202,7 +204,8 @@ class ProductScraper:
         print("Parsing Products")
 
         result = []
-        classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli") # embeddings model
+        #classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli") # embeddings model
+        nlp = spacy.load("en_core_web_lg")
 
         # gets list of ~950 matlab colors for extracting colors from listing name
         colors_categorized = {'red': [], 'orange': [], 'yellow': [], 'green': [], 'blue': [], 'purple': [], 'pink': [], 'white': [], 'other': []}
@@ -250,6 +253,10 @@ class ProductScraper:
             color = info.get("color", "Unknown").capitalize()
             color_listed = True
 
+            texts = [] # for embeddings model
+            colors_lowered = ["red", "white", "blue", "green", "yellow", "orange", "brown"]
+            color_vecs = {c: nlp(c).vector for c in colors_lowered}
+
             if "sunf" in name.lower(): # sunflowers are yellow
                 if color == "Unknown":
                     color_listed = False
@@ -270,18 +277,43 @@ class ProductScraper:
                             if color in color_list:
                                 color_cat = cat
                     else: # use embeddings model
-                        # continue
-                        print("======================================================================")
-                        print("Using embeddings model:", name)
-                        labels = ["red", "pink", "yellow", "white", "purple", "blue", "orange", "green"]
-                        embresult = classifier(name.lower(), labels)
+                        c_found = False
+                        for c in colors_lowered:
+                            if c in name:
+                                color = color_cat = name
+                                c_found = True
+                                break
+                        if not c_found:
+                            texts.append(name)
 
-                        print("confidence:", embresult["scores"][0])
-                        if embresult["scores"][0] > 0.5: # high confidence
-                            color = embresult["labels"][0]
-                            color_cat = color
-                            print("color:", color)
-                        print("======================================================================")
+                        # continue
+                        # print("======================================================================")
+                        # print("Using embeddings model:", name)
+                        # labels = ["red", "pink", "yellow", "white", "purple", "blue", "orange", "green"]
+                        # embresult = classifier(name.lower(), labels)
+
+                        # print("confidence:", embresult["scores"][0])
+                        # if embresult["scores"][0] > 0.5: # high confidence
+                        #     color = embresult["labels"][0]
+                        #     color_cat = color
+                        #     print("color:", color)
+                        # print("======================================================================")
+
+            for text in texts:
+                doc = nlp(text)
+                best_token, best_color, best_sim = None, None, -1
+                for token in doc:
+                    token_lower = token.text.lower()
+                    if token.has_vector:
+                        for c, vec in color_vecs.items():
+                            sim = token.vector.dot(vec) / (np.linalg.norm(token.vector) * np.linalg.norm(vec))
+                            if sim > best_sim:
+                                best_sim = sim
+                                best_token = token.text
+                                best_color = c
+
+                if best_token and best_sim > 0.5:
+                    color = color_cat = best_color
 
             stem_length = info.get("length", 0)
             if isinstance(stem_length, str) and stem_length.isdigit():
