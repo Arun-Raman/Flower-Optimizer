@@ -18,6 +18,10 @@ class FlowerCategory(Enum):
     SUNFLOWER = "575"
     LILY = "688_691"
     CARNATION = "453"
+    ALSTROMERIA = "431"
+    HYDRANGEA = "509"
+    POMPON = "552_700_699_698_791_841_750"
+    TULIP = "582"
     DAILY_DEALS = "806"
 
 # Class for scraping product listings from Farm2Florist
