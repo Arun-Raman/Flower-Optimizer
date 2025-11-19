@@ -8,7 +8,11 @@ colors_lower = [c.lower() for c in colors]
 color_vecs = {c: nlp(c).vector for c in colors}
 
 texts = [
-    "Rose RED 60X"
+    "Rose RED 60X", "Rose Fall Pack 40cm", "Pom Bronze+Red CDN",
+    "Lily Fall Pack Hybrid Orange/Yellow 3/4", "Mums Bronze+Red Spider / Cremon Combo",
+    "Sunflower Yellow Vincent Choice Select", "POMPON DAISY ASSORTED 70CM",
+    "Lily L.A. Sweet Longwood Orange /Brown 3/5 Blooms",
+    "Sunflower Firewalker Medium"
 ]
 
 for text in texts:
@@ -17,6 +21,13 @@ for text in texts:
 
     for token in doc:
         token_lower = token.text.lower()
+        # for c in colors:
+        #     print(c, token)
+        #     if c in token_lower:
+        #         color_found = True
+        #         print(f"Text: {text}")
+        #         print("  Exact Match, color:", c)
+        #         break
 
         # # Exact match
         # if token_lower in colors_lower:
@@ -37,6 +48,8 @@ for text in texts:
     print(f"Text: {text}")
     if best_token:
         print(f"  Most similar token: {best_token} → {best_color} (sim={best_sim:.2f})")
+        if best_sim < 0.5:
+            print("No Match")
     else:
         print("  No matching token found.")
     print()
