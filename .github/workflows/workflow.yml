@@ -26,6 +26,9 @@ jobs:
       - name: Create data directory
         run: mkdir -p data
 
+      - name: Download NLP model
+        run: python -m spacy download en_core_web_lg
+
       - name: Run webscraper
         timeout-minutes: 15
         env:
