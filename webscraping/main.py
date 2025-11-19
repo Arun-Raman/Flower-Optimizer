@@ -23,8 +23,7 @@ def main():
 
     try:
         for category in categories:
-            if category == FlowerCategory.LILY:
-                scraper.scrape_products([category], start_page_number)
+            scraper.scrape_products([category], start_page_number)
 
 
     except RuntimeError as e:
