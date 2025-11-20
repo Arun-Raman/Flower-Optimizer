@@ -254,7 +254,7 @@ class ProductScraper:
             color_listed = True
 
             texts = [] # for embeddings model
-            colors_lowered = ["red", "white", "blue", "green", "yellow", "orange", "brown"]
+            colors_lowered = ["red", "white", "blue", "green", "yellow", "orange", "purple", "pink"]
             color_vecs = {c: nlp(c).vector for c in colors_lowered}
 
             if "sunf" in name.lower(): # sunflowers are yellow
@@ -314,6 +314,9 @@ class ProductScraper:
 
                 if best_token and best_sim > 0.5:
                     color = color_cat = best_color
+
+            if color in colors_lowered:
+                color_cat = color
 
             stem_length = info.get("length", 0)
             if isinstance(stem_length, str) and stem_length.isdigit():

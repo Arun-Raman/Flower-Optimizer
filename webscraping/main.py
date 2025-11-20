@@ -28,7 +28,8 @@ def main():
 
     try:
         for category in categories:
-            scraper.scrape_products([category], start_page_number)
+            if category == FlowerCategory.TULIP:
+                scraper.scrape_products([category], start_page_number)
 
 
     except RuntimeError as e:
