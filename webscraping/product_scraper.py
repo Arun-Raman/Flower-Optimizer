@@ -261,12 +261,25 @@ class ProductScraper:
                 if color == "Unknown":
                     color_listed = False
                     color = color_cat = "yellow"
-            else:
-                if "coral" in name.lower():
+            else: # the 3 capital letters are from Tavolo Farms color naming convention
+                if "coral" in name.lower() or "peach" in name.lower() or "COR" in name or "PCH" in name or "PKB" in name or "PKL" in name or "PKM" in name:
                     color_listed = False
                     color = color_cat = "pink"
-                elif "ros ylw" in name.lower(): # these are NOT yellow and embeddings mistakenly makes some red
+                elif "CRM" in name or "IVO" in name or "SAN" in name or "WHT" in name:
                     color_listed = False
+                    color = color_cat = "white"
+                elif "GRN" in name:
+                    color_listed = False
+                    color = color_cat = "green"
+                elif "LAV" in name:
+                    color_listed = False
+                    color = color_cat = "purple"
+                elif "ORG" in name:
+                    color_listed = False
+                    color = color_cat = "orange"
+                elif "YLW" in name:
+                    color_listed = False
+                    color = color_cat = "yellow"
                 else:
                     match = color_regex.search(name.lower())
                     if match:
