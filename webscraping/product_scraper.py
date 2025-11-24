@@ -9,9 +9,9 @@ from enum import Enum
 from matplotlib import colors
 import spacy
 import numpy as np
-#from transformers import pipeline
-
 import requests
+
+from webscraping.product_parser import ProductParser
 
 
 # Enum which holds flower categories as numerical codes used in the f2f API
@@ -35,6 +35,8 @@ class ProductScraper:
         self.url = None
         self.headers = None
         self.payload = None
+
+        self.product_parser = ProductParser()
 
     # Collects and sets the necessary HTTP headers needed to call the f2f API
     def _get_api_headers(self):
@@ -87,8 +89,6 @@ class ProductScraper:
     def _fetch_api_data(self):
         print("Fetching API Data")
 
-        result = []
-
         response = self.session.post(self.url, headers=self.headers, json=self.payload)
         if response.status_code != 200:
             print("Error:", response.status_code, response.text)
@@ -99,57 +99,6 @@ class ProductScraper:
 
         result = self._fetch_all_pages(self.url, self.headers, self.payload, 0, num_products // 12) # todo: get rid of magic number (12)
         print(f"Result length: {len(result)}")
-
-        # consecutive_failed_requests = 0
-        # while True:
-        #     if consecutive_failed_requests > 3:
-        #         print("Error: too many failed requests")
-        #         self._write_csv(self._parse_products(result))
-        #         self._checkpoint_and_restart()
-        #
-        #     response = self.session.post(self.url, headers=self.headers, json=self.payload)
-        #
-        #     if response.status_code != 200:
-        #         consecutive_failed_requests += 1
-        #
-        #         print("Error:", response.status_code, response.text)
-        #
-        #         wait = consecutive_failed_requests * 2 + random.uniform(0, 3)
-        #         print(f"Waiting {wait:.2f} seconds before retrying...")
-        #         time.sleep(wait)
-        #         #
-        #         # print("Refreshing API headers")
-        #         # self._get_api_headers()
-        #         continue  # retry same pageNo
-        #
-        #     try:
-        #         data = response.json()
-        #     except json.JSONDecodeError:
-        #         print("Error: received invalid JSON (possibly HTML error page). Retrying...")
-        #         consecutive_failed_requests += 1
-        #         wait = consecutive_failed_requests * 2 + random.uniform(0, 3)
-        #         print(f"Waiting {wait:.2f} seconds before retrying...")
-        #         time.sleep(wait)
-        #         print("Refreshing API headers")
-        #         self._get_api_headers()
-        #         continue
-        #
-        #     consecutive_failed_requests = 0
-        #
-        #     products = data.get("products", {})
-        #     num_products = data["products"]["product_count"]
-        #
-        #     if not products or products.get("product_count", 0) == 0:
-        #         break
-        #
-        #     for listingWrapper in products.get("result", []):
-        #         result.append((list(listingWrapper.values())[0], products.get("cat_name", "")))
-        #
-        #     print(f"{len(result)} products found ({len(result) * 100 / num_products:.2f} %) [pageNo: {self.payload['pageNo']}]")
-        #     self.payload["pageNo"] += 1
-        #
-        #     time.sleep(random.uniform(0.5, 1.5))
-
         print("Finished Fetching API Data")
 
         return result
@@ -173,7 +122,10 @@ class ProductScraper:
                         data = future.result()
                         products = data.get("products", {})
                         for listingWrapper in products.get("result", []):
-                            result.append((list(listingWrapper.values())[0], products.get("cat_name", "NA"))) # todo: find better way to set category
+                            listing = list(listingWrapper.values())[0]
+                            listing["category"] = products.get("cat_name", "NA")
+
+                            result.append(listing)
 
                     except Exception as e:
                         print(f"Page {page} failed: \"{e}\"")
@@ -242,10 +194,7 @@ class ProductScraper:
         pattern = r'\b(' + '|'.join(re.escape(c) for c in flat_colors) + r')\b'
         color_regex = re.compile(pattern, re.IGNORECASE)
 
-        for x in data:
-            listing = x[0]
-            flower_category = x[1]
-
+        for listing in data:
             info = listing.get("info", {})
             name = str(info.get("name", "").strip())
 
@@ -316,7 +265,6 @@ class ProductScraper:
                 doc = nlp(text)
                 best_token, best_color, best_sim = None, None, -1
                 for token in doc:
-                    token_lower = token.text.lower()
                     if token.has_vector:
                         for c, vec in color_vecs.items():
                             sim = token.vector.dot(vec) / (np.linalg.norm(token.vector) * np.linalg.norm(vec))
@@ -348,7 +296,7 @@ class ProductScraper:
             entry = {
                 "Identifier": listing["info"]["name"],
                 "Cost": float(listing["delivery"][0]["perboxprice"].replace("$", "")),
-                "Type": flower_category,
+                "Type": listing["category"],
                 "Color": color,
                 "Color Category": color_cat,
                 "Color Listed": color_listed,
@@ -421,4 +369,4 @@ class ProductScraper:
         }
 
         api_data = self._fetch_api_data()
-        self._write_csv(self._parse_products(api_data))
+        self._write_csv(self.product_parser.parse_products(api_data))

@@ -30,7 +30,6 @@ def main():
         for category in categories:
             scraper.scrape_products([category], start_page_number)
 
-
     except RuntimeError as e:
         if "RESTART_REQUIRED" in str(e):
             print("Restarting script after checkpoint")
