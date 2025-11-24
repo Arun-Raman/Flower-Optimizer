@@ -11,7 +11,7 @@ import spacy
 import numpy as np
 import requests
 
-from webscraping.product_parser import ProductParser
+from product_parser import ProductParser
 
 
 # Enum which holds flower categories as numerical codes used in the f2f API
