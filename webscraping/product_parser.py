@@ -48,14 +48,14 @@ FLOWER_COLORS = ["red", "white", "blue", "green", "yellow", "orange", "purple", 
 FLOWER_COLOR_VECS = {c: SPACY_NLP(c).vector for c in FLOWER_COLORS}
 
 CATEGORY_PATTERNS = {
-    "Roses": re.compile(r"(?i)\brose(s)?\b"),
-    "Sunflowers": re.compile(r"(?i)\bsunflower(s)?\b"),
+    "Roses": re.compile(r"(?i)\brose?s?\b"),
+    "Sunflowers": re.compile(r"(?i)\bsunf(?:lower)?s?\b"),
     "Lilies": re.compile(r"(?i)\blil(?:y|ies)\b"),
-    "Carnations": re.compile(r"(?i)\bcarnation(s)?\b"),
-    "Alstromerias": re.compile(r"(?i)\balstromeria(s)?\b"),
-    "Hydrangeas": re.compile(r"(?i)\bhydrangea(s)?\b"),
-    "Pompons": re.compile(r"(?i)\bpompon(s)?\b"),
-    "Tulips": re.compile(r"(?i)\btulip(s)?\b"),
+    "Carnations": re.compile(r"(?i)\bcarn(?:ation)?s?\b"),
+    "Alstromerias": re.compile(r"(?i)\balstr(?:o|omeria)?s?\b"),
+    "Hydrangeas": re.compile(r"(?i)\bhydr(?:angea|angeas)?\b"),
+    "Pompons": re.compile(r"(?i)\bpom(?:s|p|ps|pon|pons)?\b"),
+    "Tulips": re.compile(r"(?i)\btulips?\b"),
 }
 
 class ProductParser:
