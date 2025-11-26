@@ -12,21 +12,25 @@ jobs:
   scrape_products:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.12
+          cache: pip
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Create data directory
-        run: mkdir -p data
+      - name: Cache spaCy model
+        id: cache-spacy
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/spacy
+          key: spacy-model-en_core_web_lg
 
       - name: Download NLP model
+        if: steps.cache-spacy.outputs.cache-hit != 'true'
         run: python -m spacy download en_core_web_lg
 
       - name: Run webscraper
