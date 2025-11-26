@@ -138,7 +138,7 @@ class ProductScraper:
         return result
 
     def _fetch_page(self, session, url, headers, payload_template, page_no):
-        print(f"Fetching Page {page_no}")
+        # print(f"Fetching Page {page_no}")
 
         payload = payload_template.copy()
         payload["pageNo"] = page_no
