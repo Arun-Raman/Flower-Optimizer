@@ -47,6 +47,17 @@ SPACY_NLP = spacy.load("en_core_web_lg")
 FLOWER_COLORS = ["red", "white", "blue", "green", "yellow", "orange", "purple", "pink"]
 FLOWER_COLOR_VECS = {c: SPACY_NLP(c).vector for c in FLOWER_COLORS}
 
+CATEGORY_PATTERNS = {
+    "Roses": re.compile(r"(?i)\brose(s)?\b"),
+    "Sunflowers": re.compile(r"(?i)\bsunflower(s)?\b"),
+    "Lilies": re.compile(r"(?i)\blil(?:y|ies)\b"),
+    "Carnations": re.compile(r"(?i)\bcarnation(s)?\b"),
+    "Alstromerias": re.compile(r"(?i)\balstromeria(s)?\b"),
+    "Hydrangeas": re.compile(r"(?i)\bhydrangea(s)?\b"),
+    "Pompons": re.compile(r"(?i)\bpompon(s)?\b"),
+    "Tulips": re.compile(r"(?i)\btulip(s)?\b"),
+}
+
 class ProductParser:
     def parse_products(self, data: list) -> list[dict]:
         print("Parsing Product")
@@ -93,9 +104,9 @@ class ProductParser:
                     if color == 'Unknown':
                         color = match.group(1)
                         color_listed = False
-                    for cat, color_list in COLORS_CATEGORIZED.items():
+                    for c, color_list in COLORS_CATEGORIZED.items():
                         if color in color_list:
-                            color_cat = cat
+                            color_cat = c
                 else: # use embeddings model
                     c_found = False
                     for c in FLOWER_COLORS:
@@ -108,17 +119,17 @@ class ProductParser:
 
         for text in texts:
             doc = SPACY_NLP(text)
-            best_token, best_color, best_sim = None, None, -1
+            best_token, best_color, best_similarity = None, None, -1
             for token in doc:
                 if token.has_vector:
                     for c, vec in FLOWER_COLOR_VECS.items():
                         sim = token.vector.dot(vec) / (np.linalg.norm(token.vector) * np.linalg.norm(vec))
-                        if sim > best_sim:
-                            best_sim = sim
+                        if sim > best_similarity:
+                            best_similarity = sim
                             best_token = token.text
                             best_color = c
 
-            if best_token and best_sim > 0.5:
+            if best_token and best_similarity > 0.5:
                 color = color_cat = best_color
 
         if color in FLOWER_COLORS:
@@ -138,10 +149,41 @@ class ProductParser:
         now = datetime.now()
         shipping_time_hours = (shipping_date - now).total_seconds() / 3600
 
+        flower_type = listing["category"]
+
+        if flower_type == "Daily Deals":
+            for category, pattern in CATEGORY_PATTERNS.items():
+                if pattern.search(name):
+                    flower_type = category
+                    break
+
+        # Try vector similarity if regex fails
+        # if flower_type == "Daily Deals":
+        #     print("Categorizing via spacy")
+        #
+        #     doc = SPACY_NLP(name)
+        #     cat_vectors = {c: SPACY_NLP(c).vector for c in CATEGORY_PATTERNS}
+        #
+        #     best_category = None
+        #     best_similarity = 0.7
+        #
+        #     for token in doc:
+        #         if not token.has_vector:
+        #             continue
+        #         for c, _ in cat_vectors.items():
+        #             sim = token.similarity(SPACY_NLP(c))
+        #             if sim > best_similarity:
+        #                 best_similarity = sim
+        #                 best_category = c
+        #
+        #     print(best_category, best_similarity)
+        #     if best_category:
+        #         flower_type = best_category
+
         entry = {
-            "Identifier": listing["info"]["name"],
+            "Identifier": name,
             "Cost": float(listing["delivery"][0]["perboxprice"].replace("$", "")),
-            "Type": listing["category"],
+            "Type": flower_type,
             "Color": color,
             "Color Category": color_cat,
             "Color Listed": color_listed,
