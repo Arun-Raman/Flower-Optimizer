@@ -29,9 +29,11 @@ jobs:
           path: ~/.local/share/spacy
           key: spacy-model-en_core_web_lg
 
-      - name: Download NLP model
+      - name: Download spaCy model
         if: steps.cache-spacy.outputs.cache-hit != 'true'
-        run: python -m spacy download en_core_web_lg
+        run: |
+          python -m spacy download en_core_web_lg
+          python -m spacy info en_core_web_lg
 
       - name: Run webscraper
         timeout-minutes: 15
