@@ -14,6 +14,7 @@ def main():
 
     categories = [
         FlowerCategory.ROSE,
+        FlowerCategory.DAISY,
         FlowerCategory.LILY,
         FlowerCategory.SUNFLOWER,
         FlowerCategory.CARNATION,

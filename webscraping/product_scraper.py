@@ -13,6 +13,7 @@ from product_parser import ProductParser
 # Enum which holds flower categories as numerical codes used in the f2f API
 class FlowerCategory(Enum):
     ROSE = "557"
+    DAISY = "477"
     SUNFLOWER = "575"
     LILY = "688_691"
     CARNATION = "453"
