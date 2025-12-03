@@ -25,6 +25,9 @@ jobs:
       - name: Download spaCy model
         run: python -m spacy download en_core_web_lg
 
+      - name: Remove old CSV
+        run: rm -f data/products.csv
+
       - name: Run webscraper
         timeout-minutes: 15
         env:
