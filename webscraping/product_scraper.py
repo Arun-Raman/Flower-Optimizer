@@ -164,7 +164,7 @@ class ProductScraper:
         import csv, os
         fieldnames = [
             "Identifier", "Cost", "Type", "Color", "Color Category", "Color Listed",
-            "Number of Flowers per Package", "Stem Length", "Shipping Time (Hours)"
+            "Number of Flowers per Package", "Stem Length", "Shipping Date", "Variety", "Vendor"
         ]
         output_dir = "data"
         os.makedirs(output_dir, exist_ok=True)

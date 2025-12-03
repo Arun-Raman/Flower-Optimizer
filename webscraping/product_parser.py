@@ -67,7 +67,14 @@ class ProductParser:
 
     def _parse_product(self, listing):
         info = listing.get("info", {})
+        avail_id = list(info.keys())[0]
         name = str(info.get("name", "").strip())
+        shipping_date = datetime.strptime(listing["delivery"][0]["delivery_date"], "%d-%b-%Y")
+        # now = datetime.now()
+        # shipping_time_hours = (shipping_date - now).total_seconds() / 3600
+
+        flower_variety = info.get(avail_id, {}).get("varity", "NA")  # "varity" is misspelled in the farm2florist API
+        vendor = info.get("loc", "NA")
 
         color_cat = 'placeholder'
         color = info.get("color", "Unknown").capitalize()
@@ -146,12 +153,7 @@ class ProductParser:
             else:
                 stem_length = 0
 
-        shipping_date = datetime.strptime(listing["delivery"][0]["delivery_date"], "%d-%b-%Y")
-        now = datetime.now()
-        shipping_time_hours = (shipping_date - now).total_seconds() / 3600
-
         flower_type = listing["category"]
-
         if flower_type == "Daily Deals":
             for category, pattern in CATEGORY_PATTERNS.items():
                 if pattern.search(name):
@@ -190,7 +192,9 @@ class ProductParser:
             "Color Listed": color_listed,
             "Number of Flowers per Package": listing["delivery"][0]["qty_per_box"],
             "Stem Length": stem_length,
-            "Shipping Time (Hours)": shipping_time_hours,
+            "Shipping Date": shipping_date.strftime("%d-%m-%Y"),
+            "Variety": flower_variety,
+            "Vendor": vendor
         }
 
         return entry
