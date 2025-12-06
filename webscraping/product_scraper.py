@@ -1,4 +1,5 @@
 import json
+import os
 import random
 import re
 import time
@@ -32,6 +33,7 @@ class ProductScraper:
         self.url = None
         self.headers = None
         self.payload = None
+        self.store_id = "28071" # Default signed out store id
 
         self.product_parser = ProductParser()
 
@@ -39,6 +41,12 @@ class ProductScraper:
     def _get_api_headers(self):
         print("Getting API headers")
 
+        headers = {
+            "Origin": "https://www.farm2florist.com",
+            "Connection": "close"
+        }
+
+        # Get Kip-ApiKey
         kip_url = "https://www.farm2florist.com/env.js"
 
         try:
@@ -59,23 +67,41 @@ class ProductScraper:
             raise Exception
         kip_key = match.group(1)
 
-        x_access_token_url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/header" # URL which gives us x-access-token
+        headers["Kip-Apikey"] = kip_key
 
-        # Kip-Apikey does not become invalid so we can just set it to a known functional key
-        # Origin has to be farm2florist; otherwise it crashes
-        headers = {
-            "Kip-Apikey": kip_key,
-            "Origin": "https://www.farm2florist.com",
-            "Connection": "close"
-        }
+
+        # Get signed out in x-access-token
+        x_access_token_url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/header" # URL which gives us x-access-token
 
         response = self.session.post(x_access_token_url, headers=headers)
         if response.status_code != 200:
             print("Error:", response.status_code, response.text)
-            raise Exception
+            raise
 
         response_json = json.loads(response.text)
         headers["x-access-token"] = response_json["guest"]["api_token"]
+
+        # Get signed in x-access-token and store id
+        login_url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/user/login"
+
+        login_email = os.environ.get("FARM2FLORIST_LOGIN_EMAIL")
+        login_password_hashed = os.environ.get("FARM2FLORIST_LOGIN_PASSWORD_HASHED")
+        login_random_key = os.environ.get("FARM2FLORIST_LOGIN_RANDOM_KEY")
+
+        response = self.session.post(login_url, headers=headers, json={
+            "email": login_email,
+            "password": login_password_hashed,
+            "random_key": login_random_key
+        })
+        if response.status_code != 200:
+            print("Error:", response.status_code, response.text)
+            raise
+
+        response_json = json.loads(response.text)
+        headers["x-access-token"] = response_json[0]["result"]["api_token"]
+        self.store_id = response_json[0]["result"]["store_list"][0]["store_id"]
+
+
         self.url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/products/list"
         self.headers = headers
 
@@ -144,7 +170,7 @@ class ProductScraper:
         return result
 
     def _fetch_page(self, session, url, headers, payload_template, page_no):
-        # print(f"Fetching Page {page_no}")
+        print(f"Fetching Page {page_no}")
 
         payload = payload_template.copy()
         payload["pageNo"] = page_no
@@ -206,7 +232,7 @@ class ProductScraper:
             "searchEndDate": "",
             "searchStartDate": "",
             "sort": "index",
-            "storeId": "28071",
+            "storeId": self.store_id,
             "variety": ""
         }
 

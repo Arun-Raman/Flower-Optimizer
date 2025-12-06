@@ -32,6 +32,9 @@ jobs:
         timeout-minutes: 15
         env:
           PYTHONUNBUFFERED: 1
+          FARM2FLORIST_LOGIN_EMAIL: ${{ secrets.FARM2FLORIST_LOGIN_EMAIL }}
+          FARM2FLORIST_LOGIN_PASSWORD_HASHED: ${{ secrets.FARM2FLORIST_LOGIN_PASSWORD_HASHED }}
+          FARM2FLORIST_LOGIN_RANDOM_KEY: ${{ secrets.FARM2FLORIST_LOGIN_RANDOM_KEY }}
         run: python webscraping/main.py
 
       - name: Create or update release and upload CSV
