@@ -86,35 +86,29 @@ class ProductScraper:
     def _fetch_api_data(self):
         print("Fetching API Data")
 
-        response = self.session.post(self.url, headers=self.headers, json=self.payload)
-        if response.status_code != 200:
-            print("Error:", response.status_code, response.text)
+        result = self._fetch_all_pages(self.url, self.headers, self.payload)
 
-        data = response.json()
-        num_products = data["products"]["product_count"]
-        print("Total Products:", num_products)
-
-        result = self._fetch_all_pages(self.url, self.headers, self.payload, 0, num_products // 12) # todo: get rid of magic number (12)
-        print(f"Result length: {len(result)}")
+        print(f"{len(result)} products scraped")
         print("Finished Fetching API Data")
 
         return result
 
-    def _fetch_all_pages(self, url, headers, payload_template, start_page, end_page):
-        pending = {p: 0 for p in range(start_page, end_page + 1)}
+    def _fetch_all_pages(self, url, headers, payload_template):
+        max_workers = 16
+        failures = {} # dict mapping page number to num retries
+        pages_submitted = {0}
         result = []
 
-        with ThreadPoolExecutor(max_workers=16) as ex:
-            session = requests.Session()
-
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
             def submit_page(page):
-                return ex.submit(self._fetch_page, session, url, headers, payload_template, page), page
+                return ex.submit(self._fetch_page, self.session, url, headers, payload_template, page), page
 
-            future_map = dict(submit_page(p) for p in pending)
+            future_map = dict([submit_page(0)])
 
             while future_map:
                 for future in as_completed(future_map):
                     page = future_map.pop(future)
+
                     try:
                         data = future.result()
                         products = data.get("products", {})
@@ -124,14 +118,25 @@ class ProductScraper:
 
                             result.append(listing)
 
+                        total_product_count = products.get("product_count")
+
+                        results_per_page = len(products.get("result", []))
+                        total_pages = (total_product_count + results_per_page - 1) // results_per_page
+                        if len(pages_submitted) < total_pages:
+                            for next_page in range(total_pages):
+                                if next_page not in pages_submitted:
+                                    fut_new, page_new = submit_page(next_page)
+                                    future_map[fut_new] = page_new
+                                    pages_submitted.add(next_page)
+
                     except Exception as e:
                         print(f"Page {page} failed: \"{e}\"")
 
-                        retries = pending[page] + 1
+                        retries = failures[page] + 1
                         if retries > self.MAX_PAGE_RETRIES:
                             print(f"Page {page} exhausted retries: \"{e}\"")
                             continue
-                        pending[page] = retries
+                        failures[page] = retries
                         time.sleep(1 * retries)
                         fut_new, page_new = submit_page(page)
                         future_map[fut_new] = page_new
