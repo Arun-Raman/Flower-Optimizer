@@ -158,7 +158,7 @@ class ProductScraper:
                     except Exception as e:
                         print(f"Page {page} failed: \"{e}\"")
 
-                        retries = failures[page] + 1
+                        retries = failures.get(page, 0) + 1
                         if retries > self.MAX_PAGE_RETRIES:
                             print(f"Page {page} exhausted retries: \"{e}\"")
                             continue
@@ -170,7 +170,7 @@ class ProductScraper:
         return result
 
     def _fetch_page(self, session, url, headers, payload_template, page_no):
-        print(f"Fetching Page {page_no}")
+        # print(f"Fetching Page {page_no}")
 
         payload = payload_template.copy()
         payload["pageNo"] = page_no
@@ -215,7 +215,7 @@ class ProductScraper:
 
         category_str = "_".join([category.value for category in categories]).strip("_")
 
-        print(f"Scraping category: {category_str}")
+        print(f"\nScraping category: {category_str}")
 
         self.payload = {
             "category": category_str,
