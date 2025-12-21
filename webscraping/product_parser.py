@@ -82,7 +82,10 @@ class ProductParser:
 
         texts = [] # for embeddings model
 
-
+        if "assort" in name.lower(): # group assortments as a color option
+            if color == "Unknown":
+                color_listed = False
+                color = color_cat = "assortment"
         if "sunf" in name.lower(): # sunflowers are yellow
             if color == "Unknown":
                 color_listed = False
