@@ -27,6 +27,7 @@ class FlowerCategory(Enum):
 # Class for scraping product listings from Farm2Florist
 class ProductScraper:
     MAX_PAGE_RETRIES = 3
+    USE_LOGIN = True
 
     def __init__(self):
         self.session = requests.Session()
@@ -82,6 +83,15 @@ class ProductScraper:
         headers["x-access-token"] = response_json["guest"]["api_token"]
 
         # Get signed in x-access-token and store id
+        if self.USE_LOGIN:
+            self._log_in(headers)
+
+        self.url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/products/list"
+        self.headers = headers
+
+        print("Successfully captured API headers")
+
+    def _log_in(self, headers):
         login_url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/user/login"
 
         login_email = os.environ.get("FARM2FLORIST_LOGIN_EMAIL")
@@ -100,12 +110,6 @@ class ProductScraper:
         response_json = json.loads(response.text)
         headers["x-access-token"] = response_json[0]["result"]["api_token"]
         self.store_id = response_json[0]["result"]["store_list"][0]["store_id"]
-
-
-        self.url = "https://www.farm2florist.com/r/api/b2b/farm2florist-admin-bff/admin-bff/products/list"
-        self.headers = headers
-
-        print("Successfully captured API headers")
 
     # Sends POST requests to the farm2florist API and compiles a list of JSON objects to parse
     # Returns a list of tuple values where the first element is the JSON object and the second is the product category
