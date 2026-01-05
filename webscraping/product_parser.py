@@ -156,15 +156,15 @@ class ProductParser:
             else:
                 stem_length = 0
 
-        flower_type = listing["category"]
-        if flower_type == "Daily Deals":
+        flower_category = listing["category"]
+        if flower_category == "Daily Deals":
             for category, pattern in CATEGORY_PATTERNS.items():
                 if pattern.search(name):
-                    flower_type = category
+                    flower_category = category
                     break
 
         # Try vector similarity if regex fails
-        # if flower_type == "Daily Deals":
+        # if flower_category == "Daily Deals":
         #     print("Categorizing via spacy")
         #
         #     doc = SPACY_NLP(name)
@@ -184,12 +184,12 @@ class ProductParser:
         #
         #     print(best_category, best_similarity)
         #     if best_category:
-        #         flower_type = best_category
+        #         flower_category = best_category
 
         entry = {
             "Identifier": name,
             "Cost": float(listing["delivery"][0]["perboxprice"].replace("$", "")),
-            "Type": flower_type,
+            "Category": flower_category,
             "Color": color,
             "Color Category": color_cat,
             "Color Listed": color_listed,

@@ -13,16 +13,26 @@ def main():
         start_page_number = checkpoint["page_number"]
 
     categories = [
-        FlowerCategory.ROSE,
+        FlowerCategory.ROSES,
+        FlowerCategory.ROSE_FREEDOM,
+        FlowerCategory.DAVID_AUSTIN_GARDEN_ROSE,
+        FlowerCategory.ROSE_BICOLOR,
         FlowerCategory.DAISY,
-        FlowerCategory.LILY,
+        FlowerCategory.GERBERAS_DAISY,
+        FlowerCategory.POMPON_DAISY,
         FlowerCategory.SUNFLOWER,
+        FlowerCategory.LILY_ASIATIC,
+        FlowerCategory.LILY_ORIENTAL,
         FlowerCategory.CARNATION,
         FlowerCategory.ALSTROMERIA,
         FlowerCategory.HYDRANGEA,
-        FlowerCategory.POMPON,
+        FlowerCategory.POMPONS,
+        FlowerCategory.POMPON_BUTTON,
+        FlowerCategory.POMPON_CDN,
+        FlowerCategory.POMPON_CUSHION,
+        FlowerCategory.POMPON_NOVELTY,
         FlowerCategory.TULIP,
-        FlowerCategory.DAILY_DEALS
+        FlowerCategory.DAILY_DEALS,
     ]
 
     scraper = ProductScraper()

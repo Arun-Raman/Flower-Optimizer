@@ -13,14 +13,24 @@ from product_parser import ProductParser
 
 # Enum which holds flower categories as numerical codes used in the f2f API
 class FlowerCategory(Enum):
-    ROSE = "557"
+    ROSES = "557"
+    ROSE_FREEDOM = "707"
+    DAVID_AUSTIN_GARDEN_ROSE = "701"
+    ROSE_BICOLOR = "702"
     DAISY = "477"
+    GERBERAS_DAISY = "799"
+    POMPON_DAISY = "699"
     SUNFLOWER = "575"
-    LILY = "688_691"
+    LILY_ASIATIC = "688"
+    LILY_ORIENTAL = "691"
     CARNATION = "453"
     ALSTROMERIA = "431"
     HYDRANGEA = "509"
-    POMPON = "552_700_699_698_791_841_750"
+    POMPONS = "552"
+    POMPON_BUTTON = "750"
+    POMPON_CDN = "791"
+    POMPON_CUSHION = "698"
+    POMPON_NOVELTY = "700"
     TULIP = "582"
     DAILY_DEALS = "806"
 
@@ -198,7 +208,7 @@ class ProductScraper:
     def _write_csv(self, data, filename="products.csv"):
         import csv, os
         fieldnames = [
-            "Identifier", "Cost", "Type", "Color", "Color Category", "Color Listed",
+            "Identifier", "Cost", "Category", "Color", "Color Category", "Color Listed",
             "Number of Flowers per Package", "Stem Length", "Shipping Date", "Variety", "Vendor"
         ]
         output_dir = "data"
