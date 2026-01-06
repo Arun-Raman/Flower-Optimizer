@@ -21,6 +21,7 @@ def main():
         FlowerCategory.GERBERAS_DAISY,
         FlowerCategory.POMPON_DAISY,
         FlowerCategory.SUNFLOWER,
+        FlowerCategory.LILIES,
         FlowerCategory.LILY_ASIATIC,
         FlowerCategory.LILY_ORIENTAL,
         FlowerCategory.CARNATION,

@@ -21,6 +21,7 @@ class FlowerCategory(Enum):
     GERBERAS_DAISY = "799"
     POMPON_DAISY = "699"
     SUNFLOWER = "575"
+    LILIES = "522"
     LILY_ASIATIC = "688"
     LILY_ORIENTAL = "691"
     CARNATION = "453"
