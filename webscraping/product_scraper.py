@@ -229,7 +229,8 @@ class ProductScraper:
 
     # Public function which returns the list of dictionaries representing product listings
     def scrape_products(self, categories: list[FlowerCategory], from_page_no: int = 0):
-        self._get_api_headers()
+        if self.headers is None:
+            self._get_api_headers()
 
         category_str = "_".join([category.value for category in categories]).strip("_")
 
